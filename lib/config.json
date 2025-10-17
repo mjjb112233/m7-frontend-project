@@ -1,0 +1,39 @@
+{
+  "api": {
+    "baseUrl": "http://localhost:8080/api",
+    "timeout": 30000,
+    "retries": 3,
+    "retryDelay": 1000
+  },
+  "websocket": {
+    "baseUrl": "ws://localhost:8080"
+  },
+  "app": {
+    "baseUrl": "http://localhost:3000",
+    "version": "1.0.0",
+    "environment": "development"
+  },
+  "features": {
+    "debugMode": true,
+    "useMockData": true,
+    "enableLogging": true
+  },
+  "jwt": {
+    "secret": "your-secret-key",
+    "expiresIn": "7d"
+  },
+  "development": {
+    "apiBaseUrl": "http://localhost:8080/api",
+    "wsBaseUrl": "ws://localhost:8080",
+    "appBaseUrl": "http://localhost:3000",
+    "debugMode": true,
+    "useMockData": true
+  },
+  "production": {
+    "apiBaseUrl": "/api",
+    "wsBaseUrl": "",
+    "appBaseUrl": "",
+    "debugMode": false,
+    "useMockData": false
+  }
+}

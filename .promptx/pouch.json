@@ -1,0 +1,74 @@
+{
+  "currentState": "initial",
+  "stateHistory": [
+    {
+      "from": "initial",
+      "command": "project",
+      "timestamp": "2025-10-16T17:30:22.699Z",
+      "args": [
+        {
+          "workingDirectory": "H:\\code\\m7\\test\\m7-frontend123\\m7-frontend",
+          "ideType": "cursor"
+        }
+      ]
+    },
+    {
+      "from": "initial",
+      "command": "discover",
+      "timestamp": "2025-10-16T17:30:23.634Z",
+      "args": []
+    },
+    {
+      "from": "initial",
+      "command": "action",
+      "timestamp": "2025-10-16T17:30:24.683Z",
+      "args": [
+        "assistant"
+      ]
+    },
+    {
+      "from": "initial",
+      "command": "recall",
+      "timestamp": "2025-10-16T17:30:25.913Z",
+      "args": [
+        {
+          "role": "assistant",
+          "query": "null"
+        }
+      ]
+    },
+    {
+      "from": "initial",
+      "command": "remember",
+      "timestamp": "2025-10-16T17:30:30.211Z",
+      "args": [
+        {
+          "role": "assistant",
+          "engrams": [
+            {
+              "content": "PromptX系统初始化完成，项目路径为H:\\code\\m7\\test\\m7-frontend123\\m7-frontend，这是一个前端项目，包含多个功能模块如bin-classify、card-extract、cvv-check等",
+              "schema": "PromptX 初始化 前端项目 m7-frontend",
+              "strength": 0.8,
+              "type": "ATOMIC"
+            },
+            {
+              "content": "项目结构包含app目录下的多个功能页面，components目录下的UI组件，lib目录下的API客户端和服务，以及完整的TypeScript配置",
+              "schema": "项目结构 app components lib TypeScript",
+              "strength": 0.7,
+              "type": "PATTERN"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "from": "initial",
+      "command": "action",
+      "timestamp": "2025-10-16T17:30:48.002Z",
+      "args": [
+        "luban"
+      ]
+    }
+  ],
+  "lastUpdated": "2025-10-16T17:30:48.087Z"
+}

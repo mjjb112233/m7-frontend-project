@@ -1,0 +1,8 @@
+{
+  "api": {
+    "baseUrl": "http://localhost:8080/api",
+    "timeout": 30000,
+    "retries": 3,
+    "retryDelay": 1000
+  }
+}
