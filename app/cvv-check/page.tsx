@@ -3,6 +3,7 @@
 import { useEffect } from "react"
 import { AuthGuard } from "@/components/layout/auth-guard"
 import Header from "@/components/layout/header"
+import { CVVCheckFooter } from "@/components/layout/cvv-check-footer"
 import { useLanguage } from "@/contexts/language-context"
 import { useAuth } from "@/contexts/auth-context"
 import { useCVVDetection } from "./hooks/useCVVDetection"
@@ -512,6 +513,7 @@ function CVVCheckContent() {
         </div>
       )}
 
+      <CVVCheckFooter />
     </div>
   )
 }

@@ -282,7 +282,7 @@ export function PrecheckStep({
           <Button
             onClick={handleStartDetection}
             {...({ size: "sm" } as any)}
-            className="bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:from-purple-600 hover:to-blue-600 transition-all duration-300 shadow-lg"
+            className="bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600 transition-all duration-300 shadow-lg"
             disabled={precheckResults.valid.length === 0 || isChecking}
           >
             {isChecking ? (
@@ -295,7 +295,7 @@ export function PrecheckStep({
             )}
           </Button>
         </div>
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-blue-500"></div>
+        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
       </CardContent>
     </Card>
 

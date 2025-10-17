@@ -143,68 +143,83 @@ export function ResultsStep({
       })
     }
 
+    const copyCardToClipboard = (result: CVVResult) => {
+      const cardInfo = `${result.cardNumber}|${result.cvv}|${result.expiry}${result.other ? `|${result.other}` : ''}`
+      navigator.clipboard.writeText(cardInfo).then(() => {
+        setCopySuccess(true)
+        setTimeout(() => setCopySuccess(false), 2000)
+      })
+    }
+
     return (
-      <div className="space-y-3">
-        {!results || results.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl">📝</span>
+      <div className="flex flex-col h-96">
+        {/* 固定高度的数据展示区域 */}
+        <div className="flex-1 min-h-0">
+          {!results || results.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground h-full flex flex-col justify-center">
+              <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-2xl">📝</span>
+              </div>
+              {t("cvv.noDataForStatus")}
             </div>
-            {t("cvv.noDataForStatus")}
-            <div className="flex justify-center pt-4">
-              <Button
-                {...({ variant: "outline", size: "sm" } as any)}
-                onClick={copyAllToClipboard}
-                disabled={true}
-                className="flex items-center gap-2 bg-transparent opacity-50"
-              >
-                <Copy className="h-4 w-4" />
-                {t("cvv.copyAll")} (0 {t("cvv.items")})
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="space-y-3 max-h-96 overflow-y-auto">
+          ) : (
+            <div className="space-y-2 h-full overflow-y-auto pr-2">
               {(results || []).map((result, index) => (
-                <div key={result.id} className="flex items-center justify-between p-4 bg-card rounded-lg border">
-                  <div className="flex items-center space-x-4">
-                    <div
-                      className={`w-3 h-3 rounded-full ${
-                        status === "有效" || status === "valid"
-                          ? "bg-green-500"
-                          : status === "无效" || status === "invalid"
-                            ? "bg-red-500"
-                            : "bg-yellow-500"
-                      }`}
-                    />
-                    <div className="flex flex-col">
-                      <span className="font-mono text-sm">{result.cardNumber}</span>
-                      <span className="font-mono text-xs text-gray-500">CVV: {result.cvv}</span>
-                      <span className="font-mono text-xs text-gray-500">有效期: {result.expiry}</span>
-                      {result.other && (
-                        <span className="font-mono text-xs text-gray-500">其他: {result.other}</span>
-                      )}
+                <div key={result.id} className="flex items-center gap-3 p-3 bg-card rounded-lg border hover:shadow-sm transition-shadow">
+                  <div
+                    className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                      status === "有效" || status === "valid"
+                        ? "bg-green-500"
+                        : status === "无效" || status === "invalid"
+                          ? "bg-red-500"
+                          : "bg-yellow-500"
+                    }`}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="font-mono text-sm font-medium text-gray-900 truncate">
+                      {result.cardNumber}
                     </div>
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    {formatTimestamp(result.detectionCompletedAt, 'full')}
+                  <div className="flex-shrink-0 font-mono text-xs text-gray-600">
+                    CVV: {result.cvv}
                   </div>
+                  <div className="flex-shrink-0 font-mono text-xs text-gray-600">
+                    {result.expiry}
+                  </div>
+                  {result.other && (
+                    <div className="flex-shrink-0 font-mono text-xs text-gray-500 max-w-20 truncate" title={result.other}>
+                      {result.other}
+                    </div>
+                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => copyCardToClipboard(result)}
+                    className="flex-shrink-0 h-8 w-8 p-0 hover:bg-gray-100"
+                    title="复制卡片信息"
+                  >
+                    <Copy className="h-3 w-3" />
+                  </Button>
                 </div>
               ))}
             </div>
-            <div className="flex justify-center pt-4">
-              <Button
-                {...({ variant: "outline", size: "sm" } as any)}
-                onClick={copyAllToClipboard}
-                className="flex items-center gap-2 bg-transparent"
-              >
-                <Copy className="h-4 w-4" />
-                {t("cvv.copyAll")} ({(results || []).length} {t("cvv.items")})
-              </Button>
-            </div>
-          </>
-        )}
+          )}
+        </div>
+        
+        {/* 固定在底部的复制按钮 */}
+        <div className="flex-shrink-0 pt-4 border-t border-gray-100">
+          <div className="flex justify-center">
+            <Button
+              {...({ variant: "outline", size: "sm" } as any)}
+              onClick={copyAllToClipboard}
+              disabled={!results || results.length === 0}
+              className="flex items-center gap-2 bg-transparent"
+            >
+              <Copy className="h-4 w-4" />
+              {t("cvv.copyAll")} ({(results || []).length} {t("cvv.items")})
+            </Button>
+          </div>
+        </div>
       </div>
     )
   }
@@ -229,64 +244,99 @@ export function ResultsStep({
         <div className="absolute inset-0 bg-gradient-to-br from-indigo-50 to-purple-50 opacity-60"></div>
         <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-indigo-200/30 to-purple-200/30 rounded-full -translate-y-16 translate-x-16"></div>
         <CardHeader className="relative bg-gradient-to-r from-indigo-600/10 to-purple-600/10 pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-bold text-gray-900 flex items-center gap-2">
-              <div className="w-6 h-6 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center shadow-lg">
-                <TrendingUp className="h-4 w-4 text-white" />
-              </div>
-              {t("cvv.detectionResults")}
-            </CardTitle>
-            
-            {/* 时间信息 */}
-            {detectionResults && (
-              <div className="flex flex-col items-end text-sm text-gray-600">
-                <div className="flex items-center gap-4">
-                  <div className="flex flex-col items-center">
-                    <span className="text-xs text-gray-500">启动时间</span>
-                    <span className="font-medium">
-                      {formatTimestamp(detectionResults.detectionStartTime, 'full')}
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <span className="text-xs text-gray-500">结束时间</span>
-                    <span className="font-medium">
-                      {formatTimestamp(detectionResults.detectionEndTime, 'full')}
-                    </span>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <span className="text-xs text-gray-500">消耗时间</span>
-                    <span className="font-medium text-indigo-600">
-                      {detectionResults.detectionDuration}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
+          <CardTitle className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <div className="w-6 h-6 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center shadow-lg">
+              <TrendingUp className="h-4 w-4 text-white" />
+            </div>
+            {t("cvv.detectionResults")}
+          </CardTitle>
         </CardHeader>
 
         <CardContent className="relative p-6">
-          <div className="mb-6 p-4 bg-white border rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-gray-900">{t("cvv.totalConsumption")}</span>
-              <div className="text-right">
-                <div className="text-2xl font-bold text-indigo-600">
-                  {detectionResults && detectionResults.consumedCoins ? detectionResults.consumedCoins.toFixed(1) : '0.0'}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+            {/* 左侧：总消耗信息 */}
+            <div className="lg:col-span-1">
+              <div className="bg-gradient-to-r from-indigo-50 via-white to-purple-50 border border-indigo-200 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 h-full relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-indigo-200/20 to-purple-200/20 rounded-full -translate-y-10 translate-x-10"></div>
+                <div className="relative space-y-4">
+                  {/* 主要消耗信息 */}
+                  <div className="text-center">
+                    <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg mx-auto mb-3">
+                      <span className="text-white text-xl font-bold">M</span>
+                    </div>
+                    <div className="text-sm font-medium text-gray-600 mb-1">{t("cvv.totalConsumption")}</div>
+                    <div className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-1">
+                      {detectionResults && detectionResults.consumedCoins ? detectionResults.consumedCoins.toFixed(1) : '0.0'}
+                    </div>
+                    <div className="text-sm text-indigo-700 font-semibold">{t("cvv.mCoins")}</div>
+                  </div>
+                  
+                  {/* 任务ID */}
+                  {detectionId && (
+                    <div className="bg-white/70 rounded-lg p-3 border border-indigo-100">
+                      <div className="text-xs text-gray-500 mb-2 text-center">任务ID</div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-xs font-mono text-gray-700 flex-1 break-all text-center">
+                          {detectionId}
+                        </div>
+                        <button
+                          onClick={() => copyToClipboard(detectionId)}
+                          className="flex-shrink-0 w-6 h-6 bg-indigo-100 hover:bg-indigo-200 rounded flex items-center justify-center transition-colors duration-200 group"
+                          title="复制任务ID"
+                        >
+                          <Copy className="w-3 h-3 text-indigo-600 group-hover:text-indigo-700" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* 时间信息 */}
+                  {detectionResults && (
+                    <div className="space-y-3 pt-4 border-t border-indigo-100">
+                      <div className="text-center">
+                        <div className="text-xs text-gray-500 mb-1">启动时间</div>
+                        <div className="text-sm font-medium text-gray-700">
+                          {formatTimestamp(detectionResults.detectionStartTime, 'full')}
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xs text-gray-500 mb-1">结束时间</div>
+                        <div className="text-sm font-medium text-gray-700">
+                          {formatTimestamp(detectionResults.detectionEndTime, 'full')}
+                        </div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-xs text-gray-500 mb-1">消耗时间</div>
+                        <div className="text-sm font-medium text-indigo-600 font-semibold">
+                          {detectionResults.detectionDuration}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div className="text-sm text-indigo-700 font-medium">{t("cvv.mCoins")}</div>
               </div>
             </div>
-          </div>
 
-          <Tabs defaultValue="valid" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-white">
-              <TabsTrigger value="valid" className="text-sm font-medium">
+            {/* 右侧：显示卡信息区域 */}
+            <div className="lg:col-span-2">
+              <Tabs defaultValue="valid" className="w-full h-full">
+            <TabsList className="grid w-full grid-cols-3 bg-gray-100 p-1">
+              <TabsTrigger 
+                value="valid" 
+                className="text-sm font-medium data-[state=active]:bg-green-100 data-[state=active]:text-green-700 data-[state=active]:border-green-200 hover:bg-green-50 transition-colors duration-200"
+              >
                 {t("cvv.validTab")}
               </TabsTrigger>
-              <TabsTrigger value="invalid" className="text-sm font-medium">
+              <TabsTrigger 
+                value="invalid" 
+                className="text-sm font-medium data-[state=active]:bg-red-100 data-[state=active]:text-red-700 data-[state=active]:border-red-200 hover:bg-red-50 transition-colors duration-200"
+              >
                 {t("cvv.invalidTab")}
               </TabsTrigger>
-              <TabsTrigger value="unknown" className="text-sm font-medium">
+              <TabsTrigger 
+                value="unknown" 
+                className="text-sm font-medium data-[state=active]:bg-yellow-100 data-[state=active]:text-yellow-700 data-[state=active]:border-yellow-200 hover:bg-yellow-50 transition-colors duration-200"
+              >
                 {t("cvv.unknownTab")}
               </TabsTrigger>
             </TabsList>
@@ -302,7 +352,9 @@ export function ResultsStep({
             <TabsContent value="unknown" className="mt-6">
               <ResultTable results={unknownResults} status={t("cvv.unknownStatus")} />
             </TabsContent>
-          </Tabs>
+              </Tabs>
+            </div>
+          </div>
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-purple-500"></div>
         </CardContent>
       </Card>

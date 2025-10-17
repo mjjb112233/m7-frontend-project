@@ -159,14 +159,14 @@ export function ConfigStepV2({
     <Card className="relative overflow-hidden border-0 shadow-2xl max-w-4xl mx-auto">
       <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 opacity-60"></div>
       <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-200/30 to-indigo-200/30 rounded-full -translate-y-16 translate-x-16"></div>
-      <CardHeader className="relative text-center pb-4 bg-gradient-to-r from-blue-600/10 to-purple-600/10">
-        <CardTitle className="text-xl font-bold text-gray-900 flex items-center justify-center gap-2">
+      <CardHeader className="relative text-left pb-4 bg-gradient-to-r from-blue-600/10 to-purple-600/10">
+        <CardTitle className="text-xl font-bold text-gray-900 flex items-center gap-2">
           <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center shadow-lg">
             <Shield className="h-4 w-4 text-white" />
           </div>
           {t("cvv.detectionConfig")}
         </CardTitle>
-        <CardDescription className="text-sm text-gray-600">{t("cvv.selectModeAndChannel")}</CardDescription>
+        <CardDescription className="text-sm text-gray-600 text-left">{t("cvv.selectModeAndChannel")}</CardDescription>
         {isLoadingConfig && (
           <div className="flex items-center gap-2 text-xs text-gray-600 justify-center mt-2">
             <div className="w-3 h-3 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
@@ -175,113 +175,119 @@ export function ConfigStepV2({
         )}
       </CardHeader>
       <CardContent className="relative space-y-6 p-6">
-        {/* 检测模式选择 */}
-        <div className="space-y-4">
-          <label className="text-base font-semibold text-gray-900 flex items-center gap-2">
-            <div className="w-5 h-5 bg-gradient-to-br from-purple-500 to-violet-500 rounded-lg flex items-center justify-center shadow-lg">
-              <Zap className="h-3 w-3 text-white" />
-            </div>
-            {t("cvv.detectionMode")}
-          </label>
-          <div className="flex gap-3 justify-center">
-            {detectionConfig?.detectionModes?.map((modeData) => {
-              // 直接使用当前模式数据
-              const modeConfig = modeData["channels-data"]
-              const isEnabled = true // 所有模式默认启用
+        {/* 检测模式和通道选择 - 左右布局 */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative">
+          {/* 左侧：检测模式选择 - 只占1列 */}
+          <div className="lg:col-span-1 space-y-4">
+            <label className="text-base font-semibold text-gray-900 flex items-center gap-2">
+              <div className="w-5 h-5 bg-gradient-to-br from-purple-500 to-violet-500 rounded-lg flex items-center justify-center shadow-lg">
+                <Zap className="h-3 w-3 text-white" />
+              </div>
+              {t("cvv.detectionMode")}
+            </label>
+            <div className="flex flex-col gap-3 items-center" style={{marginTop: '50px'}}>
+              {detectionConfig?.detectionModes?.map((modeData) => {
+                // 直接使用当前模式数据
+                const modeConfig = modeData["channels-data"]
+                const isEnabled = true // 所有模式默认启用
 
-              return (
-                <Button
-                  key={modeData["mode-id"]}
-                  variant={selectedMode?.["mode-id"] === modeData["mode-id"] ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => isEnabled && handleModeSelect(modeData)}
-                  disabled={!isEnabled}
-                  className={`px-6 py-2 text-sm font-medium transition-all duration-300 hover:scale-105 hover:shadow-lg overflow-hidden ${
-                    selectedMode?.["mode-id"] === modeData["mode-id"]
-                      ? "bg-gradient-to-r from-purple-500 to-violet-500 text-white hover:from-purple-600 hover:to-violet-600 shadow-lg"
-                      : "bg-white hover:shadow-md"
-                  } ${!isEnabled ? "opacity-50" : ""}`}
-                  title={modeConfig?.description}
-                >
-                  {modeData.name}
-                  {!isEnabled && <span className="ml-1 text-xs">(维护中)</span>}
-                </Button>
-              )
-            })}
+                return (
+                  <Button
+                    key={modeData["mode-id"]}
+                    variant={selectedMode?.["mode-id"] === modeData["mode-id"] ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => isEnabled && handleModeSelect(modeData)}
+                    disabled={!isEnabled}
+                    className={`px-3 py-1.5 text-sm font-medium transition-all duration-200 hover:shadow-md rounded w-24 ${
+                      selectedMode?.["mode-id"] === modeData["mode-id"]
+                        ? "bg-gradient-to-r from-purple-500 to-violet-500 text-white shadow-md"
+                        : "bg-white hover:bg-gray-50 border border-gray-200"
+                    } ${!isEnabled ? "opacity-50" : ""}`}
+                    title={modeConfig?.description}
+                  >
+                    {modeData.name}
+                    {!isEnabled && <span className="ml-1 text-xs">(维护中)</span>}
+                  </Button>
+                )
+              })}
+            </div>
           </div>
-        </div>
 
-        {/* 通道选择 */}
-        <div className="space-y-4">
-          <label className="text-base font-semibold text-gray-900 flex items-center gap-2">
-            <div className="w-5 h-5 bg-gradient-to-br from-emerald-500 to-green-500 rounded-lg flex items-center justify-center shadow-lg">
-              <TrendingUp className="h-3 w-3 text-white" />
-            </div>
-            {t("cvv.selectChannel")}
-          </label>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {channels.map((channel, index) => {
-              const channelColors = [
-                { from: "blue-500", to: "cyan-500", bg: "blue-50", border: "blue-200" },
-                { from: "emerald-500", to: "green-500", bg: "emerald-50", border: "emerald-200" },
-                { from: "purple-500", to: "violet-500", bg: "purple-50", border: "purple-200" },
-              ]
-              const colorTheme = channelColors[index % channelColors.length]
+          {/* 分割线 */}
+          <div className="hidden lg:block absolute left-1/4 top-4 bottom-4 w-px bg-gradient-to-b from-transparent via-blue-300 to-transparent shadow-sm"></div>
 
-              return (
-                <Card
-                  key={channel.id}
-                  className={`relative overflow-hidden cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:-translate-y-1 border-0 shadow-lg ${
-                    selectedChannel?.id === channel.id
-                      ? `ring-2 ring-${colorTheme.from.split("-")[0]}-500 bg-${colorTheme.bg} shadow-xl`
-                      : channel.status !== "online"
-                        ? "opacity-50 cursor-not-allowed"
-                        : ""
-                  }`}
-                  onClick={() => channel.status === "online" && handleChannelSelect(channel)}
-                >
-                  <div
-                    className={`absolute inset-0 bg-gradient-to-br from-${colorTheme.bg} to-${colorTheme.bg} opacity-60`}
-                  ></div>
-                  <div
-                    className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-${colorTheme.from}/20 to-${colorTheme.to}/20 rounded-full -translate-y-10 translate-x-10`}
-                  ></div>
-                  <CardContent className="relative p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="font-semibold text-sm text-gray-900">{channel.name}</span>
-                      <Badge
-                        variant={
-                          channel.status === "online"
-                            ? "default"
-                            : channel.status === "busy"
-                              ? "secondary"
-                              : "destructive"
-                        }
-                        className="text-xs font-medium"
-                      >
-                        {channel.status === "online" ? t("cvv.statusOnline") : channel.status === "busy" ? t("cvv.statusBusy") : t("cvv.statusOffline")}
-                      </Badge>
-                    </div>
-                    <div className="space-y-1 text-xs text-gray-600">
-                      <div className="flex items-center justify-between">
-                        <span>消耗:</span>
-                        <span className={`font-semibold text-${colorTheme.from.split("-")[0]}-600`}>
-                          {channel.consumption || channel.rate} M币
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>速度:</span>
-                        <span className="font-semibold">{channel.speed}</span>
-                      </div>
-                      <div className="text-xs text-gray-500 mt-2">{channel.description}</div>
-                    </div>
+          {/* 右侧：通道选择 - 占2列 */}
+          <div className="lg:col-span-2 space-y-4">
+            <label className="text-base font-semibold text-gray-900 flex items-center gap-2">
+              <div className="w-5 h-5 bg-gradient-to-br from-emerald-500 to-green-500 rounded-lg flex items-center justify-center shadow-lg">
+                <TrendingUp className="h-3 w-3 text-white" />
+              </div>
+              {t("cvv.selectChannel")}
+            </label>
+            <div className="grid grid-cols-3 gap-4">
+              {channels.map((channel, index) => {
+                const channelColors = [
+                  { from: "blue-500", to: "cyan-500", bg: "blue-50", border: "blue-200" },
+                  { from: "emerald-500", to: "green-500", bg: "emerald-50", border: "emerald-200" },
+                  { from: "purple-500", to: "violet-500", bg: "purple-50", border: "purple-200" },
+                ]
+                const colorTheme = channelColors[index % channelColors.length]
+
+                return (
+                  <Card
+                    key={channel.id}
+                    className={`relative overflow-hidden cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:-translate-y-1 border-0 shadow-lg ${
+                      selectedChannel?.id === channel.id
+                        ? `ring-2 ring-${colorTheme.from.split("-")[0]}-500 bg-${colorTheme.bg} shadow-xl`
+                        : channel.status !== "online"
+                          ? "opacity-50 cursor-not-allowed"
+                          : ""
+                    }`}
+                    onClick={() => channel.status === "online" && handleChannelSelect(channel)}
+                  >
                     <div
-                      className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-${colorTheme.from} to-${colorTheme.to}`}
+                      className={`absolute inset-0 bg-gradient-to-br from-${colorTheme.bg} to-${colorTheme.bg} opacity-60`}
                     ></div>
-                  </CardContent>
-                </Card>
-              )
-            })}
+                    <div
+                      className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-${colorTheme.from}/20 to-${colorTheme.to}/20 rounded-full -translate-y-10 translate-x-10`}
+                    ></div>
+                    <CardContent className="relative p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="font-semibold text-sm text-gray-900">{channel.name}</span>
+                        <Badge
+                          variant={
+                            channel.status === "online"
+                              ? "default"
+                              : channel.status === "busy"
+                                ? "secondary"
+                                : "destructive"
+                          }
+                          className="text-xs font-medium"
+                        >
+                          {channel.status === "online" ? t("cvv.statusOnline") : channel.status === "busy" ? t("cvv.statusBusy") : t("cvv.statusOffline")}
+                        </Badge>
+                      </div>
+                      <div className="space-y-1 text-xs text-gray-600">
+                        <div className="flex items-center justify-between">
+                          <span>消耗:</span>
+                          <span className={`font-semibold text-${colorTheme.from.split("-")[0]}-600`}>
+                            {channel.consumption || channel.rate} M币
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span>速度:</span>
+                          <span className="font-semibold">{channel.speed}</span>
+                        </div>
+                        <div className="text-xs text-gray-500 mt-2">{channel.description}</div>
+                      </div>
+                      <div
+                        className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-${colorTheme.from} to-${colorTheme.to}`}
+                      ></div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
           </div>
         </div>
 

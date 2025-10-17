@@ -285,7 +285,7 @@ export function DetectingStep({
   }
 
   return (
-    <div className="space-y-4 max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto">
       <Card className="relative overflow-hidden border-0 shadow-xl">
         <div className="absolute inset-0 bg-gradient-to-br from-orange-50 to-red-50 opacity-60"></div>
         <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-orange-200/30 to-red-200/30 rounded-full -translate-y-16 translate-x-16"></div>
@@ -295,44 +295,6 @@ export function DetectingStep({
               <CardTitle className="text-xl font-bold text-gray-900 flex items-center gap-2">
                 <div className="w-6 h-6 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center shadow-lg">
                   <Zap className="h-4 w-4 text-white" />
-                </div>
-                {t("cvv.systemStatus")}
-              </CardTitle>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="relative p-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
-              <span className="text-sm font-medium">{t("cvv.detectionService")}</span>
-              <Badge {...({ variant: connectionStatus.backend === "connected" ? "default" : "destructive" } as any)}>
-                {connectionStatus.backend === "connected" ? t("cvv.statusOnline") : t("cvv.statusOffline")}
-              </Badge>
-            </div>
-            <div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
-              <span className="text-sm font-medium">{t("cvv.channelStatus")}</span>
-              <Badge {...({ variant: selectedChannel?.status === "online" ? "default" : "secondary" } as any)}>
-                {selectedChannel?.status === "online" ? t("cvv.statusOnline") : t("cvv.statusBusy")}
-              </Badge>
-            </div>
-            <div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
-              <span className="text-sm font-medium">同时检测用户</span>
-              <Badge {...({ variant: "default" } as any)}>{detectionProgress?.systemStatus?.concurrentUsers || 0} 人</Badge>
-            </div>
-          </div>
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 to-red-500"></div>
-        </CardContent>
-      </Card>
-
-      <Card className="relative overflow-hidden border-0 shadow-xl">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-purple-50 opacity-60"></div>
-        <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-200/30 to-purple-200/30 rounded-full -translate-y-16 translate-x-16"></div>
-        <CardHeader className="relative bg-gradient-to-r from-blue-600/10 to-purple-600/10 pb-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center shadow-lg">
-                  <TrendingUp className="h-4 w-4 text-white" />
                 </div>
                 {t("cvv.detectionProgress")}
               </CardTitle>
@@ -356,6 +318,35 @@ export function DetectingStep({
           </div>
         </CardHeader>
         <CardContent className="relative space-y-6 p-6">
+          {/* 系统状态区域 */}
+          <div className="space-y-4">
+            <div className="text-sm font-medium text-gray-900 flex items-center gap-2">
+              <div className="w-4 h-4 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
+                <TrendingUp className="h-3 w-3 text-white" />
+              </div>
+              {t("cvv.systemStatus")}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
+                <span className="text-sm font-medium">{t("cvv.detectionService")}</span>
+                <Badge {...({ variant: connectionStatus.backend === "connected" ? "default" : "destructive" } as any)}>
+                  {connectionStatus.backend === "connected" ? t("cvv.statusOnline") : t("cvv.statusOffline")}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
+                <span className="text-sm font-medium">{t("cvv.channelStatus")}</span>
+                <Badge {...({ variant: selectedChannel?.status === "online" ? "default" : "secondary" } as any)}>
+                  {selectedChannel?.status === "online" ? t("cvv.statusOnline") : t("cvv.statusBusy")}
+                </Badge>
+              </div>
+              <div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
+                <span className="text-sm font-medium">同时检测用户</span>
+                <Badge {...({ variant: "default" } as any)}>{detectionProgress?.systemStatus?.concurrentUsers || 0} 人</Badge>
+              </div>
+            </div>
+          </div>
+
+          {/* 检测进度区域 */}
 
           <div className="space-y-2">
             <div className="flex justify-between text-sm font-medium text-gray-900">
@@ -447,7 +438,7 @@ export function DetectingStep({
               </div>
             </div>
           )}
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-purple-500"></div>
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-orange-500 to-red-500"></div>
         </CardContent>
       </Card>
     </div>
