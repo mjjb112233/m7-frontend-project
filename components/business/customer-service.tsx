@@ -1,87 +1,173 @@
 "use client"
 
-import { useState } from "react"
-import { MessageCircle, X, Send } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useState, useEffect } from "react"
+import { MessageCircle, X, Send, Settings, Bell, BellOff, Bot } from "lucide-react"
 
-export function CustomerService() {
-  const [isOpen, setIsOpen] = useState(false)
+
+
+// 3D风格的可爱机器人
+const CuteRobot = ({ className = "h-20 w-20" }: { className?: string }) => {
+  return (
+    <div className={`${className} relative flex items-center justify-center`}>
+      <div className="relative transform transition-transform duration-300 hover:scale-110">
+        {/* 天线 */}
+        <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 flex flex-col items-center">
+          <div className="w-1 h-4 bg-gray-400 rounded-full"></div>
+          <div className="w-2 h-2 bg-red-400 rounded-full animate-pulse" style={{animationDuration: '2s'}}></div>
+        </div>
+        
+        {/* 头部 */}
+        <div className="relative">
+          <div className="w-12 h-8 bg-gradient-to-b from-blue-400 to-blue-500 rounded-t-2xl shadow-lg animate-bounce" style={{animationDuration: '3s'}}>
+            {/* 眼睛 */}
+            <div className="absolute top-2 left-2.5 w-2.5 h-2.5 bg-white rounded-full shadow-inner">
+              <div className="w-1 h-1 bg-blue-600 rounded-full mt-0.5 ml-0.5 animate-ping" style={{animationDuration: '2s'}}></div>
+            </div>
+            <div className="absolute top-2 right-2.5 w-2.5 h-2.5 bg-white rounded-full shadow-inner">
+              <div className="w-1 h-1 bg-blue-600 rounded-full mt-0.5 ml-0.5 animate-ping" style={{animationDuration: '2s', animationDelay: '1s'}}></div>
+            </div>
+            
+            {/* 嘴巴 */}
+            <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2">
+              <div className="w-4 h-1 bg-white rounded-full opacity-80"></div>
+            </div>
+          </div>
+        </div>
+        
+        {/* 身体 */}
+        <div className="w-11 h-12 bg-gradient-to-b from-blue-500 to-blue-600 rounded-b-xl mx-auto shadow-lg relative">
+          {/* 胸前面板 */}
+          <div className="absolute top-1.5 left-1/2 transform -translate-x-1/2 w-6 h-5 bg-blue-300 rounded opacity-50"></div>
+          
+          {/* 中央指示灯 */}
+          <div className="absolute top-3 left-1/2 transform -translate-x-1/2 w-2.5 h-2.5 bg-green-400 rounded-full animate-pulse shadow-lg" style={{animationDuration: '1.5s'}}></div>
+          
+          {/* 侧边指示灯 */}
+          <div className="absolute top-4 left-1.5 w-1.5 h-1.5 bg-yellow-400 rounded-full animate-ping" style={{animationDuration: '3s', animationDelay: '0.5s'}}></div>
+          <div className="absolute top-4 right-1.5 w-1.5 h-1.5 bg-yellow-400 rounded-full animate-ping" style={{animationDuration: '3s', animationDelay: '1.5s'}}></div>
+          
+          {/* 底部装饰 */}
+          <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-3 h-0.5 bg-blue-300 rounded opacity-60"></div>
+        </div>
+        
+        {/* 手臂 */}
+        <div className="absolute top-8 -left-2.5 w-2.5 h-6 bg-gradient-to-b from-blue-400 to-blue-500 rounded-full shadow animate-pulse" style={{animationDuration: '2.5s', animationDelay: '0.3s'}}></div>
+        <div className="absolute top-8 -right-2.5 w-2.5 h-6 bg-gradient-to-b from-blue-400 to-blue-500 rounded-full shadow animate-pulse" style={{animationDuration: '2.5s', animationDelay: '1.3s'}}></div>
+        
+        {/* 腿部 */}
+        <div className="absolute -bottom-1 left-3 w-2.5 h-4 bg-gradient-to-b from-blue-600 to-blue-700 rounded-b-full shadow"></div>
+        <div className="absolute -bottom-1 right-3 w-2.5 h-4 bg-gradient-to-b from-blue-600 to-blue-700 rounded-b-full shadow"></div>
+        
+        {/* 阴影 */}
+        <div className="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-10 h-2 bg-black opacity-20 rounded-full blur-sm"></div>
+      </div>
+    </div>
+  )
+}
+
+interface CustomerServiceProps {
+  onOpenChange?: (isOpen: boolean) => void
+}
+
+export function CustomerService({ onOpenChange }: CustomerServiceProps = {}) {
+  const [showBubble, setShowBubble] = useState(false)
+  
+  const [currentMessageIndex, setCurrentMessageIndex] = useState(0)
+  
+  // 对话泡泡的消息列表
+  const bubbleMessages = [
+    "有问题请跟我对话！",
+    "需要帮助吗？我在这里！",
+    "遇到困难？点击我聊聊！",
+    "我可以帮您解决问题！",
+    "有疑问随时找我哦～"
+  ]
+
+
+
+  // 对话泡泡的自动弹出逻辑
+  useEffect(() => {
+    // 初始延迟3秒后开始第一次泡泡
+    const initialTimeout = setTimeout(() => {
+      setShowBubble(true)
+      setTimeout(() => {
+        setShowBubble(false)
+      }, 3000)
+    }, 3000)
+    
+    const bubbleInterval = setInterval(() => {
+      setCurrentMessageIndex((prev) => {
+        const newIndex = (prev + 1) % bubbleMessages.length
+        return newIndex
+      })
+      setShowBubble(true)
+      
+      // 3秒后自动隐藏泡泡
+      setTimeout(() => {
+        setShowBubble(false)
+      }, 3000)
+    }, 5000) // 每5秒弹出一次
+
+    return () => {
+      clearTimeout(initialTimeout)
+      clearInterval(bubbleInterval)
+    }
+  }, [])
+
+
 
   const handleTelegramContact = () => {
     // 这里可以替换为实际的Telegram客服链接
     window.open("https://t.me/your_customer_service_bot", "_blank")
   }
 
+  // 暴露打开客服的方法到全局
+  useEffect(() => {
+    // @ts-ignore
+    window.openCustomerService = handleTelegramContact
+    
+    return () => {
+      // @ts-ignore
+      delete window.openCustomerService
+    }
+  }, [])
+
   return (
     <>
-      {/* 浮动按钮 */}
-      <div className="fixed bottom-6 right-6 z-50">
-        {!isOpen && (
-          <Button
-            onClick={() => setIsOpen(true)}
-            className="h-14 w-14 rounded-full bg-black hover:bg-gray-800 text-white shadow-lg hover:shadow-xl transition-all duration-200"
-            size="icon"
-          >
-            <MessageCircle className="h-6 w-6" />
-          </Button>
-        )}
+      {/* 浮动按钮组 */}
+      <div className="fixed bottom-6 right-6 z-50 group">
+        {/* 主客服按钮 */}
+        <div className="relative">
+          <div className="h-24 w-24 rounded-full bg-gradient-to-br from-blue-50 to-blue-100 border-4 border-blue-200 shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-110 flex items-center justify-center cursor-pointer" onClick={handleTelegramContact}>
+            <CuteRobot className="h-20 w-20" />
+          </div>
+          
+          {/* 小红点提示 */}
+          <div className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 rounded-full flex items-center justify-center animate-bounce shadow-lg">
+            <span className="text-sm text-white font-bold">!</span>
+          </div>
+          
+          {/* 对话泡泡 */}
+          {showBubble && (
+            <div className="absolute -top-20 -left-16 bg-white px-4 py-3 rounded-2xl shadow-xl text-sm text-gray-700 whitespace-nowrap animate-in slide-in-from-bottom-2 duration-300 border border-gray-200 z-10">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                {bubbleMessages[currentMessageIndex]}
+              </div>
+              {/* 尖角 */}
+              <div className="absolute bottom-0 left-8 transform translate-y-1/2 rotate-45 w-3 h-3 bg-white border-r border-b border-gray-200"></div>
+            </div>
+          )}
+          
+          {/* 悬停提示 */}
+          <div className="absolute -top-16 -left-10 bg-gray-800 text-white px-3 py-1 rounded-lg text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-20">
+            点击和我聊天！
+            <div className="absolute bottom-0 left-6 transform translate-y-1/2 rotate-45 w-2 h-2 bg-gray-800"></div>
+          </div>
+        </div>
       </div>
 
-      {/* 客服面板 */}
-      {isOpen && (
-        <div className="fixed bottom-6 right-6 z-50 w-80">
-          <Card className="shadow-2xl border-gray-200">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-semibold">联系客服</CardTitle>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsOpen(false)}
-                  className="h-8 w-8 hover:bg-gray-100"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-sm text-gray-600">
-                <p>需要帮助？我们的客服团队随时为您服务！</p>
-              </div>
 
-              {/* Telegram客服 */}
-              <div className="space-y-3">
-                <Button onClick={handleTelegramContact} className="w-full bg-blue-500 hover:bg-blue-600 text-white">
-                  <Send className="h-4 w-4 mr-2" />
-                  Telegram 客服
-                </Button>
-
-                <div className="text-xs text-gray-500 text-center">
-                  <p>工作时间：24小时在线服务</p>
-                  <p>平均响应时间：5分钟内</p>
-                </div>
-              </div>
-
-              {/* 常见问题快捷入口 */}
-              <div className="border-t pt-3">
-                <p className="text-sm font-medium mb-2">常见问题</p>
-                <div className="space-y-1">
-                  <button className="w-full text-left text-sm text-gray-600 hover:text-gray-900 py-1">
-                    • 如何充值M币？
-                  </button>
-                  <button className="w-full text-left text-sm text-gray-600 hover:text-gray-900 py-1">
-                    • 卡片分类如何使用？
-                  </button>
-                  <button className="w-full text-left text-sm text-gray-600 hover:text-gray-900 py-1">
-                    • CVV验证说明
-                  </button>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </>
   )
 }

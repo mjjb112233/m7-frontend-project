@@ -14,8 +14,9 @@ import {
   Lock,
 } from "lucide-react"
 import Header from "@/components/layout/header"
-import { useState, useEffect } from "react"
+import { useState, useEffect, createContext, useContext } from "react"
 import { useLanguage } from "@/contexts/language-context"
+import Link from "next/link"
 
 export default function HomePage() {
   const [isVisible, setIsVisible] = useState(false)
@@ -63,14 +64,18 @@ export default function HomePage() {
           <div
             className={`flex flex-col sm:flex-row gap-6 justify-center mb-16 transition-all duration-1000 delay-600 ${isVisible ? "animate-slide-up" : "opacity-0"}`}
           >
-            <Button className="bg-black text-white hover:bg-gray-800 rounded-full px-8 py-4 text-lg animate-pulse-glow">
-              <Shield className="w-5 h-5 mr-2" />
-              {t("home.startDetection")}
-            </Button>
-            <Button variant="outline" className="rounded-full px-8 py-4 text-lg bg-white/80 backdrop-blur-sm">
-              <CreditCard className="w-5 h-5 mr-2" />
-              {t("home.learnMore")}
-            </Button>
+            <Link href="/cvv-check">
+              <Button className="bg-black text-white hover:bg-gray-800 rounded-full px-8 py-4 text-lg animate-pulse-glow">
+                <Shield className="w-5 h-5 mr-2" />
+                {t("home.startDetection")}
+              </Button>
+            </Link>
+            <Link href="/features/cvv-check">
+              <Button variant="outline" className="rounded-full px-8 py-4 text-lg bg-white/80 backdrop-blur-sm">
+                <CreditCard className="w-5 h-5 mr-2" />
+                {t("home.learnMore")}
+              </Button>
+            </Link>
           </div>
 
 
@@ -139,10 +144,10 @@ export default function HomePage() {
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-4">{t("home.binClassify")}</h3>
                 <p className="text-gray-600 mb-4">{t("home.binClassifyDesc")}</p>
-                <div className="flex items-center text-blue-600 font-medium group-hover:text-blue-700 transition-colors">
+                <Link href="/features/bin-classify" className="flex items-center text-blue-600 font-medium group-hover:text-blue-700 transition-colors">
                   <span>{t("home.learnMoreLink")}</span>
                   <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                </div>
+                </Link>
                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-cyan-500"></div>
               </CardContent>
             </Card>
@@ -156,10 +161,10 @@ export default function HomePage() {
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-4">{t("home.cvvCheck")}</h3>
                 <p className="text-gray-600 mb-4">{t("home.cvvCheckDesc")}</p>
-                <div className="flex items-center text-emerald-600 font-medium group-hover:text-emerald-700 transition-colors">
+                <Link href="/features/cvv-check" className="flex items-center text-emerald-600 font-medium group-hover:text-emerald-700 transition-colors">
                   <span>{t("home.learnMoreLink")}</span>
                   <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                </div>
+                </Link>
                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-green-500"></div>
               </CardContent>
             </Card>
@@ -173,10 +178,10 @@ export default function HomePage() {
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 mb-4">{t("home.binQuery")}</h3>
                 <p className="text-gray-600 mb-4">{t("home.binQueryDesc")}</p>
-                <div className="flex items-center text-purple-600 font-medium group-hover:text-purple-700 transition-colors">
+                <Link href="/features/bin-query" className="flex items-center text-purple-600 font-medium group-hover:text-purple-700 transition-colors">
                   <span>{t("home.learnMoreLink")}</span>
                   <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                </div>
+                </Link>
                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-violet-500"></div>
               </CardContent>
             </Card>
@@ -230,21 +235,121 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-6 bg-black text-white">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-4xl font-bold mb-6">{t("home.ctaTitle")}</h2>
-          <p className="text-xl text-gray-300 mb-8">{t("home.ctaSubtitle")}</p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button className="bg-white text-black hover:bg-gray-100 rounded-full px-8 py-4 text-lg">
-              <CreditCard className="w-5 h-5 mr-2" />
-              {t("home.freeTrial")}
-            </Button>
-            <Button
-              variant="outline"
-              className="border-white text-white hover:bg-white hover:text-black rounded-full px-8 py-4 text-lg bg-transparent"
-            >
-              {t("home.contactSupport")}
-            </Button>
+      <section className="py-20 px-6 bg-gradient-to-br from-slate-50 to-slate-100 border-t border-slate-200">
+        <div className="max-w-6xl mx-auto">
+          {/* CTA 内容区域 */}
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold text-gray-900 mb-6">{t("home.ctaTitle")}</h2>
+            <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">{t("home.ctaSubtitle")}</p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/bin-classify">
+                <Button className="bg-black text-white hover:bg-gray-800 rounded-full px-8 py-4 text-lg">
+                  <CreditCard className="w-5 h-5 mr-2" />
+                  {t("home.freeTrial")}
+                </Button>
+              </Link>
+              <Button
+                variant="outline"
+                className="rounded-full px-8 py-4 text-lg bg-white/80 backdrop-blur-sm"
+                onClick={() => {
+                  // @ts-ignore
+                  if (window.openCustomerService) {
+                    // @ts-ignore
+                    window.openCustomerService()
+                  }
+                }}
+              >
+                {t("home.contactSupport")}
+              </Button>
+            </div>
+          </div>
+
+          {/* 底部信息区域 - 参考其他页面底部设计 */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-6">
+            {/* 品牌信息 */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
+                  <CreditCard className="h-3 w-3 text-white" />
+                </div>
+                <h3 className="font-bold text-gray-900">专业银行卡服务</h3>
+              </div>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                提供全方位的银行卡检测和分析服务，包括BIN分类、CVV验证、实时查询等专业功能。
+              </p>
+            </div>
+
+            {/* 核心服务 */}
+            <div className="space-y-3">
+              <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                <Shield className="h-4 w-4 text-blue-600" />
+                核心服务
+              </h4>
+              <ul className="space-y-2 text-sm text-gray-600">
+                <li className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                  BIN智能分类
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                  CVV实时验证
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                  批量数据处理
+                </li>
+                <li className="flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                  实时状态监控
+                </li>
+              </ul>
+            </div>
+
+            {/* 服务优势 */}
+            <div className="space-y-3">
+              <h4 className="font-semibold text-gray-900 flex items-center gap-2">
+                <Zap className="h-4 w-4 text-blue-600" />
+                服务优势
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
+                  高准确率
+                </Badge>
+                <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
+                  快速响应
+                </Badge>
+                <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 text-xs">
+                  安全可靠
+                </Badge>
+                <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 text-xs">
+                  24/7服务
+                </Badge>
+                <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-xs">
+                  全球支持
+                </Badge>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                覆盖全球主要银行和卡组织，支持多种检测模式
+              </p>
+            </div>
+          </div>
+
+          <div className="h-px bg-gradient-to-r from-transparent via-slate-300 to-transparent mb-6"></div>
+
+          {/* 底部版权信息 */}
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="text-sm text-gray-500">
+              © 2025 专业银行卡检测平台. 保留所有权利.
+            </div>
+            <div className="flex items-center gap-4 text-xs text-gray-400">
+              <span>服务状态: 正常运行</span>
+              <span>•</span>
+              <span>数据更新: 实时同步</span>
+              <span>•</span>
+              <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200 text-xs">
+                在线
+              </Badge>
+            </div>
           </div>
         </div>
       </section>
