@@ -1,6 +1,26 @@
 import { useAuth } from "@/contexts/auth-context"
 import { authenticatedRequest } from "@/lib/api"
 
+// 充值套餐接口
+export interface RechargePackage {
+  id: string
+  name: string
+  m_coin_amount: number
+  discount: number
+  original_price: number
+  description?: string
+  is_popular: boolean
+}
+
+export interface GetRechargePackagesResponse {
+  success: boolean
+  message: string
+  data: {
+    packages: RechargePackage[]
+    total: number
+  }
+}
+
 export function useRechargeAPI() {
   const { token } = useAuth()
   

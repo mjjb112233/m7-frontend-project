@@ -29,19 +29,34 @@ import {
 } from "lucide-react"
 import Header from "@/components/layout/header"
 import { RechargeFooter } from "@/components/layout/recharge-footer"
-import { generateUSDTQRCode } from "@/lib/qr-code-utils"
+import { generateQRCodeFromURL } from "@/lib/qr-code-utils"
 
-// 充值套餐接口
+// 充值套餐接口（后端API返回的数据结构）
 interface RechargePackage {
   id: string
   name: string
-  mCoinAmount: number
-  usdtPrice: number
+  m_coin_amount: number
   discount: number
-  originalPrice?: number
+  original_price: number
   description?: string
-  isPopular?: boolean
-  isRecommended?: boolean
+  is_popular: boolean
+}
+
+// 页面使用的套餐接口（包含计算后的字段）
+interface DisplayPackage {
+  id: string
+  mCoins: number
+  usdt: number
+  discount: number
+  originalPrice: number
+  discountedPrice: number  // 折扣后价格
+  savedAmount: number      // 节省的价格
+  popular: boolean
+  title: string
+  description: string
+  features: string[]
+  icon: any
+  theme: any
 }
 
 // 获取充值套餐响应接口
@@ -59,15 +74,9 @@ interface PaymentInfo {
   paymentId: string
   usdtAmount: number
   walletAddress: string
+  wallet_connect_url: string
   paymentInstructions: string | string[] // 支持字符串或字符串数组
-  validUntil: string
-  transactionHash?: string // 可选的交易哈希
-  packageInfo: {
-    packageId: string
-    mCoinAmount: number
-    usdtPrice: number
-    discount: number
-  }
+  validUntil: number // 时间戳
 }
 
 // 充值回调响应接口
@@ -98,7 +107,7 @@ function RechargeContent() {
   const token = authContext?.token
   const updateMCoins = authContext?.updateMCoins
   const refreshUserInfo = authContext?.refreshUserInfo
-  const [selectedPackage, setSelectedPackage] = useState<any | null>(null)
+  const [selectedPackage, setSelectedPackage] = useState<DisplayPackage | null>(null)
   const [showPaymentDialog, setShowPaymentDialog] = useState(false)
   const [exchangeCode, setExchangeCode] = useState("")
   const [isProcessingCode, setIsProcessingCode] = useState(false)
@@ -107,23 +116,22 @@ function RechargeContent() {
   const [resultType, setResultType] = useState<"success" | "failed">("success")
   const [resultMessage, setResultMessage] = useState("")
   const [resultAmount, setResultAmount] = useState(0)
-  const [rechargePackages, setRechargePackages] = useState<any[]>([])
+  const [rechargePackages, setRechargePackages] = useState<DisplayPackage[]>([])
   const [packagesLoading, setPackagesLoading] = useState(false)
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null)
   const [paymentStatus, setPaymentStatus] = useState<"pending" | "success" | "failed" | null>(null)
   const [statusCheckInterval, setStatusCheckInterval] = useState<NodeJS.Timeout | null>(null)
   const [qrCodeDataURL, setQrCodeDataURL] = useState<string>("")
   const [timeLeft, setTimeLeft] = useState<number>(0) // 倒计时剩余时间（秒）
-  const [randomRewardRange, setRandomRewardRange] = useState<{min: number, max: number} | null>(null) // 随机奖励范围
+
   const [activeTab, setActiveTab] = useState<string>("packages") // 当前激活的tab
 
   const usdtWalletAddress = "TQn9Y2khEsLJW1ChVWFMSMeRDow5KcbLSE"
 
   // 计算倒计时剩余时间
-  const calculateTimeLeft = (validUntil: string): number => {
+  const calculateTimeLeft = (validUntil: number): number => {
     const now = new Date().getTime()
-    const validTime = new Date(validUntil).getTime()
-    const diff = Math.max(0, Math.floor((validTime - now) / 1000))
+    const diff = Math.max(0, Math.floor((validUntil - now) / 1000))
     return diff
   }
 
@@ -160,27 +168,7 @@ function RechargeContent() {
     return () => clearInterval(timer)
   }, [paymentInfo?.validUntil])
 
-  // 获取随机奖励范围
-  const fetchRandomRewardRange = async () => {
-    if (!token) return
 
-    try {
-      const { authenticatedRequest } = await import('@/lib/api')
-      const data = await authenticatedRequest('/recharge/random-reward-range', token, {
-        method: 'GET'
-      })
-
-      if (data.success && data.data) {
-        const rangeData = data.data as any
-        setRandomRewardRange({
-          min: rangeData.minRandomReward,
-          max: rangeData.maxRandomReward
-        })
-      }
-    } catch (error) {
-      console.error('获取随机奖励范围失败:', error)
-    }
-  }
 
   // 获取充值套餐 - 直接使用 authenticatedRequest
   const fetchRechargePackages = async () => {
@@ -201,17 +189,35 @@ function RechargeContent() {
 
       if (data.success && data.data) {
         // 将API返回的套餐数据转换为页面需要的格式
-        const convertedPackages = (data.data as any).packages.map((pkg: any, index: number) => ({
-          mCoins: pkg.mCoinAmount,
-          usdt: pkg.usdtPrice,
-          discount: pkg.discount,
-          popular: pkg.isPopular || false,
-          title: pkg.name,
-          description: pkg.description || "",
-          features: generateFeatures(pkg.mCoinAmount),
-          icon: getIconForPackage(index),
-          theme: getThemeForPackage(index)
-        }))
+        const sortedPackages = (data.data as any).packages
+          .sort((a: RechargePackage, b: RechargePackage) => {
+            // 按ID大小排列，0为第一个
+            const idA = parseInt(a.id) || 0
+            const idB = parseInt(b.id) || 0
+            return idA - idB
+          })
+        
+        const convertedPackages = sortedPackages.map((pkg: RechargePackage, index: number) => {
+          // 计算折扣后的价格和节省的价格
+          const discountedPrice = pkg.original_price * (1 - pkg.discount / 100)
+          const savedAmount = pkg.original_price - discountedPrice
+          
+          return {
+            id: pkg.id,
+            mCoins: pkg.m_coin_amount,
+            usdt: discountedPrice, // 使用计算出的折扣后价格
+            discount: pkg.discount,
+            originalPrice: pkg.original_price,
+            discountedPrice: discountedPrice, // 折扣后价格
+            savedAmount: savedAmount, // 节省的价格
+            popular: pkg.is_popular,
+            title: pkg.name,
+            description: pkg.description || "",
+            features: generateFeatures(pkg.m_coin_amount),
+            icon: getIconForPackage(index),
+            theme: getThemeForPackage(index)
+          } as DisplayPackage
+        })
         
         // 添加两个额外的套餐以达到8个套餐总数
         const additionalPackages = [
@@ -435,12 +441,7 @@ function RechargeContent() {
     }
   }, [token])
 
-  // 当切换到兑换码tab时获取随机奖励范围
-  useEffect(() => {
-    if (activeTab === "exchange" && token && !randomRewardRange) {
-      fetchRandomRewardRange()
-    }
-  }, [activeTab, token, randomRewardRange])
+
 
   // 组件卸载时清理定时器
   useEffect(() => {
@@ -451,7 +452,7 @@ function RechargeContent() {
     }
   }, [statusCheckInterval])
 
-  const handlePackageSelect = async (pkg: any) => {
+  const handlePackageSelect = async (pkg: DisplayPackage) => {
     if (!token) {
       alert("请先登录")
       return
@@ -465,10 +466,7 @@ function RechargeContent() {
       const data = await authenticatedRequest('/recharge/payment', token, {
         method: 'POST',
         body: JSON.stringify({
-          packageId: `pkg_${pkg.mCoins}`,
-          mCoinAmount: pkg.mCoins,
-          usdtPrice: pkg.usdt,
-          discount: pkg.discount
+          packageId: pkg.id // 只传递套餐ID
         })
       })
 
@@ -479,24 +477,14 @@ function RechargeContent() {
           paymentId: paymentData.paymentId,
           usdtAmount: paymentData.usdtAmount,
           walletAddress: paymentData.walletAddress,
+          wallet_connect_url: paymentData.wallet_connect_url,
           paymentInstructions: paymentData.paymentInstructions,
-          validUntil: paymentData.validUntil,
-          transactionHash: paymentData.transactionHash, // 可选的交易哈希
-          packageInfo: paymentData.packageInfo || {
-            packageId: `pkg_${pkg.mCoins}`,
-            mCoinAmount: pkg.mCoins,
-            usdtPrice: pkg.usdt,
-            discount: pkg.discount
-          }
+          validUntil: paymentData.validUntil // 现在是时间戳
         })
         
-        // 生成二维码
+        // 使用 wallet_connect_url 生成二维码
         try {
-          const qrCode = await generateUSDTQRCode(
-            paymentData.walletAddress,
-            paymentData.usdtAmount.toString(),
-            'TRC20'
-          )
+          const qrCode = await generateQRCodeFromURL(paymentData.wallet_connect_url)
           setQrCodeDataURL(qrCode)
         } catch (error) {
           console.error('生成二维码失败:', error)
@@ -531,14 +519,10 @@ function RechargeContent() {
     if (!paymentInfo || !token) return
 
     try {
-      // 直接使用 authenticatedRequest 检查支付状态
+      // 使用 GET 请求检查支付状态
       const { authenticatedRequest } = await import('@/lib/api')
-      const data = await authenticatedRequest('/recharge/callback', token, {
-        method: 'POST',
-        body: JSON.stringify({
-          paymentId: paymentInfo.paymentId,
-          paymentStatus: 'check' // 标识这是一个状态查询请求
-        })
+      const data = await authenticatedRequest(`/recharge/result/${paymentInfo.paymentId}`, token, {
+        method: 'GET'
       })
 
       if (data.success && data.data) {
@@ -611,38 +595,22 @@ function RechargeContent() {
     setPaymentStatus("pending")
 
     try {
-      console.log("🔍 发送支付确认回调，等待后端验证")
-      // 发送支付确认回调到后端，让后端验证支付状态
+      console.log("🔍 检查支付状态")
+      // 使用 GET 请求检查支付结果
       const { authenticatedRequest } = await import('@/lib/api')
-      const data = await authenticatedRequest('/recharge/callback', token, {
-        method: 'POST',
-        body: JSON.stringify({
-          paymentId: paymentInfo.paymentId,
-          paymentStatus: 'confirm', // 标识这是用户确认支付，需要后端验证
-          transactionHash: paymentInfo.transactionHash || '', // 使用支付信息中的交易哈希
-          usdtAmount: paymentInfo.usdtAmount,
-          walletAddress: paymentInfo.walletAddress,
-          callbackTime: Math.floor(Date.now() / 1000) // 10位时间戳
-        })
+      const data = await authenticatedRequest(`/recharge/result/${paymentInfo.paymentId}`, token, {
+        method: 'GET'
       })
 
       if (data.success && data.data) {
-        const callbackData = data.data as any
-        if (callbackData.paymentStatus === "success") {
-          // 后端验证支付成功
+        const resultData = data.data as any
+        if (resultData.paymentStatus === "success") {
+          // 支付成功
           setPaymentStatus("success")
           setResultType("success")
           setResultMessage("充值成功！M币已到账")
-          setResultAmount(callbackData.mCoinAmount || paymentInfo.packageInfo?.mCoinAmount || 0)
+          setResultAmount(resultData.mCoinAmount || 0)
           setShowResultDialog(true)
-          
-          // 更新支付信息中的交易哈希
-          if (callbackData.transactionHash && paymentInfo) {
-            setPaymentInfo({
-              ...paymentInfo,
-              transactionHash: callbackData.transactionHash
-            })
-          }
           
           // 更新用户信息 - 获取最新的用户信息来更新导航栏
           try {
@@ -666,11 +634,11 @@ function RechargeContent() {
           } catch (error) {
             console.error('获取用户信息失败:', error)
             // 如果获取用户信息失败，使用回调返回的M币数量作为备选
-            if (callbackData.mCoinAmount !== undefined) {
-              updateMCoins?.(callbackData.mCoinAmount)
+            if (resultData.mCoinAmount !== undefined) {
+              updateMCoins?.(resultData.mCoinAmount)
             }
           }
-        } else if (callbackData.paymentStatus === "pending") {
+        } else if (resultData.paymentStatus === "pending") {
           // 后端还在验证中
           setPaymentStatus("pending")
           setResultType("failed")
@@ -856,22 +824,36 @@ function RechargeContent() {
                           <div className="mb-4">
                             <div className="text-2xl font-bold text-gray-900 mb-1">{pkg.mCoins}</div>
                             <div className="text-xs text-gray-500 mb-2">M币</div>
-                            <div className="text-lg font-bold text-orange-600">${pkg.usdt}</div>
+                            
+                            {/* 显示折扣价格 */}
+                            <div className="flex items-center justify-center gap-2 mb-1">
+                              {pkg.discount > 0 && pkg.originalPrice && (
+                                <div className="text-sm text-gray-400 line-through">
+                                  ${pkg.originalPrice.toFixed(1)}
+                                </div>
+                              )}
+                              <div className="text-lg font-bold text-orange-600">${pkg.usdt}</div>
+                            </div>
                             <div className="text-xs text-gray-500 mb-2">USDT</div>
-                            {pkg.discount > 0 && (
+                            
+                            {/* 显示节省金额 */}
+                            {pkg.discount > 0 && pkg.savedAmount && pkg.savedAmount > 0 && (
                               <div className="text-xs text-green-600 flex items-center justify-center gap-1">
                                 <Sparkles className="w-3 h-3" />
-                                节省 ${(pkg.mCoins - pkg.usdt).toFixed(1)}
+                                节省 ${pkg.savedAmount.toFixed(1)}
                               </div>
                             )}
                           </div>
                           
                           {/* Action button */}
-                          <button className={`w-full py-2.5 px-4 rounded-lg text-sm font-semibold transition-all duration-300 transform group-hover:scale-105 ${
-                            pkg.popular
-                              ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white hover:from-orange-700 hover:to-amber-700 shadow-lg"
-                              : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 hover:border-gray-300 shadow-sm"
-                          }`}>
+                          <button 
+                            onClick={() => handlePackageSelect(pkg)}
+                            className={`w-full py-2.5 px-4 rounded-lg text-sm font-semibold transition-all duration-300 transform group-hover:scale-105 ${
+                              pkg.popular
+                                ? "bg-gradient-to-r from-orange-600 to-amber-600 text-white hover:from-orange-700 hover:to-amber-700 shadow-lg"
+                                : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 hover:border-gray-300 shadow-sm"
+                            }`}
+                          >
                             选择套餐
                           </button>
                           
@@ -918,19 +900,7 @@ function RechargeContent() {
                       />
                     </div>
 
-                    {randomRewardRange && (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Coins className="w-4 h-4 text-green-600" />
-                          <span className="text-sm font-medium text-green-700">随机奖励</span>
-                        </div>
-                        <div className="pl-6">
-                          <Badge className="bg-green-100 text-green-800 border-green-200 font-semibold">
-                            {randomRewardRange.min}-{randomRewardRange.max} M币
-                          </Badge>
-                        </div>
-                      </div>
-                    )}
+
 
                     <Button
                       onClick={handleExchangeCode}
