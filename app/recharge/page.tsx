@@ -1,7 +1,7 @@
 "use client"
-import { useState, useContext, useEffect } from "react"
+import { useState, useEffect } from "react"
 import { AuthGuard } from "@/components/layout/auth-guard"
-import { AuthContext } from "@/contexts/auth-context"
+import { useAuth } from "@/contexts/auth-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -69,14 +69,18 @@ interface GetRechargePackagesResponse {
   }
 }
 
-// 支付信息接口
-interface PaymentInfo {
+// 充值支付信息接口
+interface RechargePaymentInfo {
   paymentId: string
   usdtAmount: number
   walletAddress: string
   wallet_connect_url: string
   paymentInstructions: string | string[] // 支持字符串或字符串数组
   validUntil: number // 时间戳
+  packageInfo?: {
+    mCoinAmount: number
+    discount?: number
+  }
 }
 
 // 充值回调响应接口
@@ -103,10 +107,7 @@ export default function RechargePage() {
 }
 
 function RechargeContent() {
-  const authContext = useContext(AuthContext)
-  const token = authContext?.token
-  const updateMCoins = authContext?.updateMCoins
-  const refreshUserInfo = authContext?.refreshUserInfo
+  const { token, updateMCoins, refreshUserInfo, user } = useAuth()
   const [selectedPackage, setSelectedPackage] = useState<DisplayPackage | null>(null)
   const [showPaymentDialog, setShowPaymentDialog] = useState(false)
   const [exchangeCode, setExchangeCode] = useState("")
@@ -118,7 +119,7 @@ function RechargeContent() {
   const [resultAmount, setResultAmount] = useState(0)
   const [rechargePackages, setRechargePackages] = useState<DisplayPackage[]>([])
   const [packagesLoading, setPackagesLoading] = useState(false)
-  const [paymentInfo, setPaymentInfo] = useState<PaymentInfo | null>(null)
+  const [paymentInfo, setPaymentInfo] = useState<RechargePaymentInfo | null>(null)
   const [paymentStatus, setPaymentStatus] = useState<"pending" | "success" | "failed" | null>(null)
   const [statusCheckInterval, setStatusCheckInterval] = useState<NodeJS.Timeout | null>(null)
   const [qrCodeDataURL, setQrCodeDataURL] = useState<string>("")
@@ -172,15 +173,12 @@ function RechargeContent() {
 
   // 获取充值套餐 - 直接使用 authenticatedRequest
   const fetchRechargePackages = async () => {
-    console.log("🔍 开始获取充值套餐，token:", token ? "存在" : "不存在")
     if (!token) {
-      console.log("❌ 没有token，跳过API调用")
       return
     }
 
     setPackagesLoading(true)
     try {
-      console.log("🔍 直接调用后端API: /recharge/packages")
       // 直接使用 authenticatedRequest 调用后端API
       const { authenticatedRequest } = await import('@/lib/api')
       const data = await authenticatedRequest('/recharge/packages', token, {
@@ -219,42 +217,14 @@ function RechargeContent() {
           } as DisplayPackage
         })
         
-        // 添加两个额外的套餐以达到8个套餐总数
-        const additionalPackages = [
-          {
-            mCoins: 2000,
-            usdt: 180,
-            discount: 10,
-            popular: false,
-            title: "专业套餐",
-            description: "适合专业用户的大容量套餐",
-            features: generateFeatures(2000),
-            icon: getIconForPackage(convertedPackages.length),
-            theme: getThemeForPackage(convertedPackages.length)
-          },
-          {
-            mCoins: 5000,
-            usdt: 400,
-            discount: 20,
-            popular: true,
-            title: "企业套餐",
-            description: "企业级大容量套餐，享受最大优惠",
-            features: generateFeatures(5000),
-            icon: getIconForPackage(convertedPackages.length + 1),
-            theme: getThemeForPackage(convertedPackages.length + 1)
-          }
-        ]
-        
-        setRechargePackages([...convertedPackages, ...additionalPackages])
+        setRechargePackages(convertedPackages)
       } else {
-        console.error('获取充值套餐失败:', data.message)
-        // API失败时使用默认套餐
-        setRechargePackages(getDefaultPackages())
+        // API失败时不显示任何套餐
+        setRechargePackages([])
       }
     } catch (error) {
-      console.error('获取充值套餐错误:', error)
-      // 网络错误时使用默认套餐
-      setRechargePackages(getDefaultPackages())
+      // 网络错误时不显示任何套餐
+      setRechargePackages([])
     } finally {
       setPackagesLoading(false)
     }
@@ -278,82 +248,7 @@ function RechargeContent() {
     return icons[index] || icons[0] // 如果超出范围，使用第一个图标
   }
 
-  // 获取默认套餐数据（8个套餐）
-  const getDefaultPackages = () => {
-    const defaultPackages = [
-      {
-        mCoins: 100,
-        usdt: 10,
-        discount: 0,
-        popular: false,
-        title: "入门套餐",
-        description: "适合新手用户的基础套餐"
-      },
-      {
-        mCoins: 300,
-        usdt: 28,
-        discount: 7,
-        popular: false,
-        title: "进阶套餐",
-        description: "更多功能，更高性价比"
-      },
-      {
-        mCoins: 500,
-        usdt: 45,
-        discount: 10,
-        popular: true,
-        title: "热门套餐",
-        description: "最受欢迎的套餐选择"
-      },
-      {
-        mCoins: 1000,
-        usdt: 85,
-        discount: 15,
-        popular: false,
-        title: "高级套餐",
-        description: "专业用户的理想选择"
-      },
-      {
-        mCoins: 1500,
-        usdt: 120,
-        discount: 20,
-        popular: false,
-        title: "超值套餐",
-        description: "大容量高折扣套餐"
-      },
-      {
-        mCoins: 2000,
-        usdt: 150,
-        discount: 25,
-        popular: false,
-        title: "豪华套餐",
-        description: "享受更多优惠和特权"
-      },
-      {
-        mCoins: 3000,
-        usdt: 210,
-        discount: 30,
-        popular: false,
-        title: "专业套餐",
-        description: "适合专业用户的大容量套餐"
-      },
-      {
-        mCoins: 5000,
-        usdt: 320,
-        discount: 36,
-        popular: true,
-        title: "企业套餐",
-        description: "企业级大容量套餐，享受最大优惠"
-      }
-    ]
-    
-    return defaultPackages.map((pkg, index) => ({
-      ...pkg,
-      features: generateFeatures(pkg.mCoins),
-      icon: getIconForPackage(index),
-      theme: getThemeForPackage(index)
-    }))
-  }
+
 
   // 根据索引获取主题
   const getThemeForPackage = (index: number) => {
@@ -479,7 +374,11 @@ function RechargeContent() {
           walletAddress: paymentData.walletAddress,
           wallet_connect_url: paymentData.wallet_connect_url,
           paymentInstructions: paymentData.paymentInstructions,
-          validUntil: paymentData.validUntil // 现在是时间戳
+          validUntil: paymentData.validUntil, // 现在是时间戳
+          packageInfo: {
+            mCoinAmount: pkg.mCoins,
+            discount: pkg.discount
+          }
         })
         
         // 使用 wallet_connect_url 生成二维码
@@ -487,18 +386,15 @@ function RechargeContent() {
           const qrCode = await generateQRCodeFromURL(paymentData.wallet_connect_url)
           setQrCodeDataURL(qrCode)
         } catch (error) {
-          console.error('生成二维码失败:', error)
           // 如果生成失败，使用默认图片
           setQrCodeDataURL("")
         }
         
         setShowPaymentDialog(true)
       } else {
-        console.error('创建支付订单失败:', data.message)
         alert('创建支付订单失败: ' + data.message)
       }
     } catch (error) {
-      console.error('创建支付订单错误:', error)
       alert('创建支付订单失败，请稍后重试')
     }
   }
@@ -510,7 +406,7 @@ function RechargeContent() {
       setCopySuccess(true)
       setTimeout(() => setCopySuccess(false), 2000)
     } catch (err) {
-      console.error("Failed to copy address:", err)
+      // 复制失败，静默处理
     }
   }
 
@@ -559,7 +455,7 @@ function RechargeContent() {
         }
       }
     } catch (error) {
-      console.error('检查充值状态错误:', error)
+      // 检查状态失败，静默处理
     }
   }
 
@@ -624,7 +520,7 @@ function RechargeContent() {
               console.log('🔍 获取到最新用户信息:', userInfo)
               // 更新导航栏的M币数量 - 设置为总余额，不是叠加
               // 由于updateMCoins是叠加操作，我们需要计算差值
-              const currentBalance = authContext?.user?.mCoins || 0
+              const currentBalance = user?.mCoins || 0
               const newBalance = userInfo.mCoins || 0
               const difference = newBalance - currentBalance
               if (difference !== 0) {
@@ -773,8 +669,14 @@ function RechargeContent() {
                     <div className="text-gray-400 mb-4">
                       <Coins className="h-16 w-16 mx-auto" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">暂无充值套餐</h3>
-                    <p className="text-gray-600">请联系客服或稍后重试</p>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">无法加载充值套餐</h3>
+                    <p className="text-gray-600 mb-4">服务器连接失败或暂无可用套餐</p>
+                    <button 
+                      onClick={fetchRechargePackages}
+                      className="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors"
+                    >
+                      重新加载
+                    </button>
                   </div>
                 </div>
               ) : (
