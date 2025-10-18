@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { MessageCircle, X, Send, Settings, Bell, BellOff, Bot } from "lucide-react"
+import { MessageCircle, X, Send, Settings, Bell, BellOff, Bot, User } from "lucide-react"
 
 
 
@@ -147,22 +147,22 @@ export function CustomerService({ onOpenChange }: CustomerServiceProps = {}) {
             <span className="text-sm text-white font-bold">!</span>
           </div>
           
-          {/* 对话泡泡 */}
+          {/* 对话泡泡 - 优化定位和响应式 */}
           {showBubble && (
-            <div className="absolute -top-20 -left-16 bg-white px-4 py-3 rounded-2xl shadow-xl text-sm text-gray-700 whitespace-nowrap animate-in slide-in-from-bottom-2 duration-300 border border-gray-200 z-10">
+            <div className="absolute -top-16 right-0 sm:-top-20 sm:-left-16 bg-white px-3 py-2 sm:px-4 sm:py-3 rounded-2xl shadow-xl text-xs sm:text-sm text-gray-700 animate-in slide-in-from-bottom-2 duration-300 border border-gray-200 z-20 max-w-[200px] sm:max-w-none">
               <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                {bubbleMessages[currentMessageIndex]}
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse flex-shrink-0"></div>
+                <span className="break-words">{bubbleMessages[currentMessageIndex]}</span>
               </div>
-              {/* 尖角 */}
-              <div className="absolute bottom-0 left-8 transform translate-y-1/2 rotate-45 w-3 h-3 bg-white border-r border-b border-gray-200"></div>
+              {/* 尖角 - 响应式定位 */}
+              <div className="absolute bottom-0 right-4 sm:left-8 transform translate-y-1/2 rotate-45 w-3 h-3 bg-white border-r border-b border-gray-200"></div>
             </div>
           )}
           
-          {/* 悬停提示 */}
-          <div className="absolute -top-16 -left-10 bg-gray-800 text-white px-3 py-1 rounded-lg text-xs opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-20">
-            点击和我聊天！
-            <div className="absolute bottom-0 left-6 transform translate-y-1/2 rotate-45 w-2 h-2 bg-gray-800"></div>
+          {/* 悬停提示 - 优化定位 */}
+          <div className="absolute -top-14 right-0 sm:-top-16 sm:-left-10 bg-gray-800 text-white px-3 py-1 rounded-lg text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30 max-w-[120px] sm:max-w-none">
+            <span className="break-words">点击和我聊天！</span>
+            <div className="absolute bottom-0 right-4 sm:left-6 transform translate-y-1/2 rotate-45 w-2 h-2 bg-gray-800"></div>
           </div>
         </div>
       </div>

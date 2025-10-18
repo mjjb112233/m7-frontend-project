@@ -135,7 +135,7 @@ export function GroupedResults({
                   <div className="mt-3 space-y-1">
                     {cards.slice(0, 3).map((card, index) => (
                       <div key={index} className="text-xs text-gray-500 font-mono truncate">
-                        {card.cardNumber} • {card.brand}
+                        {card.CardNumber} • {card.CardBrand}
                       </div>
                     ))}
                     {cards.length > 3 && (
@@ -204,12 +204,12 @@ export function GroupedResults({
                         {/* 卡号和复制按钮 */}
                         <div className="flex items-center justify-between mb-2">
                           <div className="font-mono text-sm font-semibold text-gray-900 truncate mr-2">
-                            {card.cardNumber}
+                            {card.CardNumber}
                           </div>
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => onCopyCard(card.cardNumber)}
+                            onClick={() => onCopyCard(card.CardNumber)}
                             className="h-6 w-6 p-0 hover:bg-purple-50 hover:text-purple-600 flex-shrink-0 transition-colors duration-200"
                           >
                             <Copy className="w-3 h-3" />
@@ -218,10 +218,10 @@ export function GroupedResults({
                         
                         {/* 简化信息显示 */}
                         <div className="flex flex-wrap gap-1">
-                          <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">{card.brand}</Badge>
-                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">{card.type}</Badge>
-                          <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">{card.level}</Badge>
-                          <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200">{card.currency}</Badge>
+                          <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">{card.CardBrand}</Badge>
+                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">{card.Type}</Badge>
+                          <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">{card.CardSegmentType}</Badge>
+                          <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200">{card.IssuerCurrency}</Badge>
                         </div>
                       </div>
                     ))}

@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { DiceBearAvatar, DiceBearSelector } from "@/components/ui/avatar-dicebear"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import {
   Dialog,
@@ -29,15 +30,12 @@ import {
 import {
   User,
   Coins,
-  History,
   CreditCard,
   Edit,
   Camera,
   Save,
   Calendar,
-  Filter,
   Download,
-  Eye,
   CheckCircle,
   XCircle,
   Clock,
@@ -45,12 +43,15 @@ import {
 import Header from "@/components/layout/header"
 import { useAuth } from "@/contexts/auth-context"
 import { useLanguage } from "@/contexts/language-context"
+import { useSearchParams } from "next/navigation"
+import { useEffect } from "react"
 
 // TODO: 移除模拟数据，使用真实的用户记录数据
 
 export default function AccountPage() {
   const { user } = useAuth()
   const { t } = useLanguage()
+  const searchParams = useSearchParams()
   const [isEditing, setIsEditing] = useState(false)
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
   const [editedUser, setEditedUser] = useState({
@@ -58,6 +59,16 @@ export default function AccountPage() {
     email: user?.email || "",
     password: "",
   })
+  const [showAvatarSelector, setShowAvatarSelector] = useState(false)
+  const [selectedAvatarSeed, setSelectedAvatarSeed] = useState<string>(user?.avatarSeed || "Felix")
+  const [selectedAvatarStyle, setSelectedAvatarStyle] = useState<string>(user?.avatarStyle || "adventurer")
+
+  // 检查URL参数，如果有edit=avatar则自动打开头像选择器
+  useEffect(() => {
+    if (searchParams.get('edit') === 'avatar') {
+      setShowAvatarSelector(true)
+    }
+  }, [searchParams])
 
   if (!user) {
     return (
@@ -114,35 +125,90 @@ export default function AccountPage() {
           <CardContent className="pt-6">
             <div className="flex items-center space-x-6">
               <div className="relative">
-                <Avatar className="w-24 h-24">
-                  <AvatarImage src={user.avatar || "/placeholder.svg"} alt={user.name} />
-                  <AvatarFallback className="text-2xl bg-primary text-primary-foreground">
-                    {(user.name || user.username || user.email || 'U').charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <Dialog>
+                <Dialog open={showAvatarSelector} onOpenChange={setShowAvatarSelector}>
                   <DialogTrigger asChild>
-                    <Button size="sm" className="absolute -bottom-2 -right-2 rounded-full w-8 h-8 p-0">
-                      <Camera className="w-4 h-4" />
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>更换头像</DialogTitle>
-                      <DialogDescription>上传新的头像图片</DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-center w-full">
-                        <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-muted/50">
-                          <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                            <Camera className="w-8 h-8 mb-2 text-muted-foreground" />
-                            <p className="text-sm text-muted-foreground">点击上传头像</p>
-                          </div>
-                          <input type="file" className="hidden" accept="image/*" />
-                        </label>
-                      </div>
-                      <Button className="w-full">保存头像</Button>
+                    <div className="cursor-pointer">
+                      <DiceBearAvatar 
+                        seed={selectedAvatarSeed}
+                        style={selectedAvatarStyle as any}
+                        size={128}
+                        showBorder={true}
+                        animated={true}
+                        className="hover:scale-105 transition-all duration-300"
+                      />
                     </div>
+                  </DialogTrigger>
+
+                  <DialogContent className="max-w-5xl max-h-[85vh] overflow-hidden border-0 shadow-xl">
+                    {/* 参考bin分类页面的设计风格 */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 opacity-60"></div>
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-200/30 to-indigo-200/30 rounded-full -translate-y-16 translate-x-16"></div>
+                    
+                    <DialogHeader className="relative bg-gradient-to-r from-blue-600/10 to-purple-600/10 pb-4 -mx-6 -mt-6 px-6 pt-6 mb-6">
+                      <DialogTitle className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                        <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center shadow-lg">
+                          <Camera className="h-4 w-4 text-white" />
+                        </div>
+                        选择头像
+                      </DialogTitle>
+                      <DialogDescription className="text-sm text-gray-600 mt-1">
+                        从下面选择一个你喜欢的头像风格和变体
+                      </DialogDescription>
+                    </DialogHeader>
+                    
+                    <div className="space-y-6 relative">
+                      {/* 内容区域 - 参考CardInput的设计 */}
+                      <div className="max-h-[400px] overflow-y-auto bg-white/80 backdrop-blur-sm border border-gray-200 rounded-lg p-4">
+                        <DiceBearSelector 
+                          selectedSeed={selectedAvatarSeed}
+                          selectedStyle={selectedAvatarStyle as any}
+                          onSelect={(seed, style) => {
+                            setSelectedAvatarSeed(seed)
+                            setSelectedAvatarStyle(style)
+                          }}
+                          showCategories={true}
+                          showStyles={true}
+                        />
+                      </div>
+                      
+                      {/* 操作按钮区域 */}
+                      <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+                        <div className="text-sm text-gray-500">
+                          <span>当前选择: {selectedAvatarStyle}</span>
+                          <span className="ml-4 text-blue-600">实时预览</span>
+                        </div>
+                        
+                        <div className="flex gap-3">
+                          <Button 
+                            variant="outline" 
+                            onClick={() => {
+                              // 重置为原来的头像
+                              setSelectedAvatarSeed(user?.avatarSeed || "Felix")
+                              setSelectedAvatarStyle(user?.avatarStyle || "adventurer")
+                              setShowAvatarSelector(false)
+                            }}
+                            className="border-gray-200 hover:bg-gray-50 transition-all duration-200"
+                          >
+                            取消
+                          </Button>
+                          <Button 
+                            onClick={() => {
+                              // TODO(stagewise): 这里需要调用API保存头像信息到后端
+                              console.log('保存头像:', { seed: selectedAvatarSeed, style: selectedAvatarStyle })
+                              setShowAvatarSelector(false)
+                              setShowSuccessDialog(true)
+                            }}
+                            className="font-semibold py-2 px-6 bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600 transition-all duration-300 hover:scale-105 shadow-lg"
+                          >
+                            <Save className="w-4 h-4 mr-2" />
+                            保存头像
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* 底部装饰条 - 参考CardInput */}
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
                   </DialogContent>
                 </Dialog>
               </div>
@@ -162,6 +228,10 @@ export default function AccountPage() {
                     <Coins className="w-5 h-5 text-yellow-600" />
                     <span className="font-semibold text-yellow-700">{user.mCoins.toLocaleString()} M币</span>
                   </div>
+                  <div className="flex items-center space-x-2 bg-blue-50 px-4 py-2 rounded-full border border-blue-200">
+                    <User className="w-5 h-5 text-blue-600" />
+                    <span className="font-semibold text-blue-700">Lv.{user.level}</span>
+                  </div>
                   <Badge variant="secondary">活跃用户</Badge>
                 </div>
               </div>
@@ -171,14 +241,10 @@ export default function AccountPage() {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="profile" className="flex items-center gap-2">
               <User className="w-4 h-4" />
               个人资料
-            </TabsTrigger>
-            <TabsTrigger value="usage" className="flex items-center gap-2">
-              <History className="w-4 h-4" />
-              使用记录
             </TabsTrigger>
             <TabsTrigger value="recharge" className="flex items-center gap-2">
               <CreditCard className="w-4 h-4" />
@@ -251,51 +317,7 @@ export default function AccountPage() {
             </Card>
           </TabsContent>
 
-          {/* Usage Records Tab */}
-          <TabsContent value="usage">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle>使用记录</CardTitle>
-                    <CardDescription>查看您的所有操作历史和M币消费记录</CardDescription>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
-                      <Filter className="w-4 h-4 mr-2" />
-                      筛选
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <Download className="w-4 h-4 mr-2" />
-                      导出
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>日期</TableHead>
-                      <TableHead>操作类型</TableHead>
-                      <TableHead>详情</TableHead>
-                      <TableHead>M币消费</TableHead>
-                      <TableHead>状态</TableHead>
-                      <TableHead>操作</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {/* TODO: 从API获取真实的使用记录数据 */}
-                    <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                        暂无使用记录
-                      </TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-              </CardContent>
-            </Card>
-          </TabsContent>
+
 
           {/* Recharge Records Tab */}
           <TabsContent value="recharge">

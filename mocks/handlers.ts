@@ -1,4 +1,52 @@
 import { http, HttpResponse, type RequestHandler } from 'msw'
+import { AVATAR_SEEDS, DICEBEAR_STYLES } from '@/components/ui/avatar-dicebear'
+
+// BIN分类查询存储（模拟内存数据库）
+interface MockQueryInfo {
+  cards: string[]
+  status: 'processing' | 'completed' | 'failed'
+  startTime: number
+  totalCount: number
+  processedCount: number
+}
+
+const mockQueryStorage: Record<string, MockQueryInfo> = {}
+
+// 生成模拟卡片信息
+function generateMockCardInfo(cardNumber: string) {
+  const bin = cardNumber.substring(0, 6)
+  
+  const brands = ['Visa', 'Mastercard', 'American Express', 'Discover', 'JCB', 'UnionPay']
+  const types = ['Credit', 'Debit', 'Prepaid']
+  const levels = ['Standard', 'Classic', 'Gold', 'Platinum', 'Signature', 'World', 'World Elite']
+  const banks = [
+    'Chase Bank', 'Bank of America', 'Wells Fargo', 'Citibank', 'Capital One',
+    'TD Bank', 'RBC', 'Scotiabank', 'BMO', 'HSBC', 'Barclays', 'Lloyds Bank',
+    'Deutsche Bank', 'BNP Paribas', 'Santander', 'ING Bank', 'Commonwealth Bank',
+    'ANZ Bank', 'Westpac', 'NAB', 'DBS Bank', 'OCBC Bank', 'UOB'
+  ]
+  const countries = ['US', 'CA', 'UK', 'DE', 'FR', 'ES', 'AU', 'SG', 'JP', 'CN', 'IN', 'BR']
+  const currencies = ['USD', 'CAD', 'GBP', 'EUR', 'AUD', 'SGD', 'JPY', 'CNY', 'INR', 'BRL']
+  
+  const seed = parseInt(bin) % 1000
+  
+  return {
+    brand: brands[seed % brands.length],
+    type: types[seed % types.length],
+    level: levels[seed % levels.length],
+    bank: banks[seed % banks.length],
+    country: countries[seed % countries.length],
+    currency: currencies[seed % currencies.length]
+  }
+}
+
+// 生成随机头像配置
+function generateRandomAvatar() {
+  const randomSeed = AVATAR_SEEDS[Math.floor(Math.random() * AVATAR_SEEDS.length)]
+  const availableStyles = Object.keys(DICEBEAR_STYLES)
+  const randomStyle = availableStyles[Math.floor(Math.random() * availableStyles.length)]
+  return { avatarSeed: randomSeed, avatarStyle: randomStyle }
+}
 
 // 模拟用户数据 - 匹配实际API结构
 const mockUsers = [
@@ -10,6 +58,8 @@ const mockUsers = [
     level: 3,
     mCoins: 1000.0,
     avatar: "https://example.com/avatar.jpg",
+    avatarSeed: "Felix",
+    avatarStyle: "adventurer",
     createdAt: 1704067200
   },
   {
@@ -20,6 +70,8 @@ const mockUsers = [
     level: 2,
     mCoins: 500.0,
     avatar: "https://example.com/avatar.jpg",
+    avatarSeed: "Aneka",
+    avatarStyle: "avataaars",
     createdAt: 1704067200
   },
   {
@@ -30,6 +82,8 @@ const mockUsers = [
     level: 1,
     mCoins: 100.0,
     avatar: "https://example.com/avatar.jpg",
+    avatarSeed: "Trouble",
+    avatarStyle: "big-ears",
     createdAt: 1704067200
   }
 ]
@@ -354,16 +408,9 @@ export const handlers: RequestHandler[] = [
 
   http.post('http://localhost:8080/api/auth/register', async ({ request }) => {
     console.log('[MSW] 拦截注册请求')
-    const body = await request.json() as { username: string; email: string; password: string; confirmPassword: string }
+    const body = await request.json() as { username: string; email: string; password: string }
     
     // 模拟验证逻辑
-    if (body.password !== body.confirmPassword) {
-      return HttpResponse.json({
-        success: false,
-        message: "两次输入的密码不一致"
-      }, { status: 400 })
-    }
-
     if (body.username === 'admin' || body.username === 'test') {
       return HttpResponse.json({
         success: false,
@@ -378,15 +425,26 @@ export const handlers: RequestHandler[] = [
       }, { status: 409 })
     }
     
+    // 生成随机的 DiceBear 头像配置
+    const { avatarSeed, avatarStyle } = generateRandomAvatar()
+    
+    const mockToken = `mock_token_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    
     return HttpResponse.json({
       success: true,
       data: {
-        userId: `user_${Date.now()}`,
-        username: body.username,
-        email: body.email,
-        message: "Registration successful"
+        token: mockToken,
+        user: {
+          id: `user_${Date.now()}`,
+          username: body.username,
+          email: body.email,
+          level: 1,
+          mCoins: 50.0,
+          avatarSeed: avatarSeed,
+          avatarStyle: avatarStyle
+        }
       },
-      message: "User registration successful"
+      message: "Registration successful"
     })
   }),
 
@@ -703,33 +761,118 @@ export const handlers: RequestHandler[] = [
 
 
 
-  // BIN分类相关接口 - 匹配实际API结构
-  http.post('*/api/bin-classify', async ({ request }) => {
-    const body = await request.json() as { cardData: string[]; category: string }
+  // 1. BIN分类查询接口
+  http.post('*/api/bin-classify/query', async ({ request }) => {
+    console.log('[MSW] BIN分类查询请求被拦截')
+    console.log('[MSW] 请求URL:', request.url)
+    console.log('[MSW] 请求头:', Object.fromEntries(request.headers.entries()))
+    const body = await request.json() as { cards: string[] }
+    console.log('[MSW] 请求体:', body)
     
-    if (!body.cardData || body.cardData.length === 0) {
+    if (!body.cards || body.cards.length === 0) {
       return HttpResponse.json({
         success: false,
+        data: { queryId: '', status: 'failed' },
         message: "卡片数据不能为空"
       }, { status: 400 })
     }
-
-    if (!['country', 'brand', 'type', 'level', 'bank', 'currency'].includes(body.category)) {
-      return HttpResponse.json({
-        success: false,
-        message: "分类类型无效"
-      }, { status: 400 })
+    
+    // 生成查询ID
+    const queryId = `query_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    
+    // 存储查询信息到内存中（实际中应该存储到数据库）
+    mockQueryStorage[queryId] = {
+      cards: body.cards,
+      status: 'processing',
+      startTime: Date.now(),
+      totalCount: body.cards.length,
+      processedCount: 0
     }
     
     return HttpResponse.json({
       success: true,
       data: {
-        groupedResults: mockBinResults,
-        totalCards: body.cardData.length,
-        categoryCount: Object.keys(mockBinResults).length,
-        processingTime: 150
+        queryId,
+        status: 'processing'
       },
-      message: "BIN classification processed successfully"
+      message: "Query started successfully"
+    })
+  }),
+
+  // 2. BIN分类结果获取接口
+  http.get('*/api/bin-classify/results/:queryId', async ({ params }) => {
+    console.log('[MSW] BIN分类结果查询请求被拦截')
+    const { queryId } = params
+    console.log('[MSW] 查询ID:', queryId)
+    
+    if (!queryId || typeof queryId !== 'string') {
+      return HttpResponse.json({
+        success: false,
+        data: { queryId: '', status: 'failed' },
+        message: "Invalid query ID"
+      }, { status: 400 })
+    }
+
+    const queryInfo = mockQueryStorage[queryId]
+    if (!queryInfo) {
+      return HttpResponse.json({
+        success: false,
+        data: { queryId, status: 'failed' },
+        message: "Query not found"
+      }, { status: 404 })
+    }
+
+    // 模拟处理进度
+    const elapsedTime = Date.now() - queryInfo.startTime
+    const processingTimePerCard = 200 // 每张卡200ms
+    const expectedProcessedCount = Math.min(
+      queryInfo.totalCount,
+      Math.floor(elapsedTime / processingTimePerCard)
+    )
+
+    queryInfo.processedCount = expectedProcessedCount
+
+    // 如果处理完成
+    if (queryInfo.processedCount >= queryInfo.totalCount) {
+      queryInfo.status = 'completed'
+      
+      // 生成模拟结果
+      const results = queryInfo.cards.map(cardNumber => {
+        const mockCard = generateMockCardInfo(cardNumber)
+        return {
+          CardNumber: cardNumber,
+          CardBrand: mockCard.brand,
+          Type: mockCard.type,
+          CountryName: mockCard.country,
+          CardSegmentType: mockCard.level,
+          IssuerCurrency: mockCard.currency,
+          BankName: mockCard.bank,
+          AuthRequired: Math.random() > 0.5,
+          AuthenticationName: Math.random() > 0.5 ? '3D Secure' : 'None'
+        }
+      })
+
+      return HttpResponse.json({
+        success: true,
+        data: {
+          queryId,
+          status: 'completed',
+          results
+        },
+        message: "Query completed successfully"
+      })
+    }
+
+    // 返回处理中状态
+    return HttpResponse.json({
+      success: true,
+      data: {
+        queryId,
+        status: 'processing',
+        totalCount: queryInfo.totalCount,
+        processedCount: queryInfo.processedCount
+      },
+      message: "Query in progress"
     })
   }),
 
@@ -808,52 +951,114 @@ export const handlers: RequestHandler[] = [
       }, { status: 400 })
     }
 
-    // 模拟BIN查询结果
+    // 模拟BIN查询结果 - 使用新的响应格式
     const mockBINData = {
       '414720': {
-        bin: body.bin,
-        cardType: '信用卡',
-        cardBrand: 'Visa',
-        cardLevel: '经典卡',
-        bankName: '中国工商银行',
-        country: '中国',
-        currency: 'CNY',
-        website: 'https://www.icbc.com.cn',
-        phone: '95588'
+        bin_length: 6,
+        pan_or_token: "PAN",
+        card_brand: "Visa",
+        type: "Credit",
+        funding_source: "Credit",
+        prepaid: false,
+        card_segment_type: "Classic",
+        number_length: 16,
+        bank_name: "中国工商银行",
+        bank_clean_name: "ICBC",
+        issuer_currency: "CNY",
+        country_alpha2: "CN",
+        country_name: "中国",
+        auth_required: true,
+        authentication_name: "3D Secure",
+        product_name: "Visa Classic",
+        domestic_only: false,
+        gambling_blocked: true,
+        reloadable: false,
+        account_updater: true,
+        level2: true,
+        level3: false,
+        alm: true,
+        shared_bin: false
       },
       '555555': {
-        bin: body.bin,
-        cardType: '信用卡',
-        cardBrand: 'Mastercard',
-        cardLevel: '白金卡',
-        bankName: '中国建设银行',
-        country: '中国',
-        currency: 'CNY',
-        website: 'https://www.ccb.com',
-        phone: '95533'
+        bin_length: 6,
+        pan_or_token: "PAN",
+        card_brand: "Mastercard",
+        type: "Credit",
+        funding_source: "Credit",
+        prepaid: false,
+        card_segment_type: "Platinum",
+        number_length: 16,
+        bank_name: "中国建设银行",
+        bank_clean_name: "CCB",
+        issuer_currency: "CNY",
+        country_alpha2: "CN",
+        country_name: "中国",
+        auth_required: true,
+        authentication_name: "3D Secure",
+        product_name: "Mastercard Platinum",
+        domestic_only: false,
+        gambling_blocked: true,
+        reloadable: false,
+        account_updater: true,
+        level2: true,
+        level3: true,
+        alm: true,
+        shared_bin: false
       },
       '622202': {
-        bin: body.bin,
-        cardType: '借记卡',
-        cardBrand: 'UnionPay',
-        cardLevel: '普卡',
-        bankName: '中国农业银行',
-        country: '中国',
-        currency: 'CNY',
-        website: 'https://www.abchina.com',
-        phone: '95599'
+        bin_length: 6,
+        pan_or_token: "PAN",
+        card_brand: "UnionPay",
+        type: "Debit",
+        funding_source: "Debit",
+        prepaid: false,
+        card_segment_type: "Standard",
+        number_length: 16,
+        bank_name: "中国农业银行",
+        bank_clean_name: "ABC",
+        issuer_currency: "CNY",
+        country_alpha2: "CN",
+        country_name: "中国",
+        auth_required: false,
+        authentication_name: "None",
+        product_name: "UnionPay Standard",
+        domestic_only: true,
+        gambling_blocked: true,
+        reloadable: false,
+        account_updater: false,
+        level2: false,
+        level3: false,
+        alm: false,
+        shared_bin: false
       }
     }
 
     const binPrefix = body.bin.substring(0, 6)
     const result = mockBINData[binPrefix as keyof typeof mockBINData] || {
-      bin: body.bin,
-      cardType: '未知',
-      cardBrand: '未知',
-      cardLevel: '未知', 
-      bankName: '未知银行',
-      country: '未知',
-      currency: 'USD'
+      bin_length: 6,
+      pan_or_token: "PAN",
+      card_brand: "Unknown",
+      type: "Unknown",
+      funding_source: "Unknown",
+      prepaid: false,
+      card_segment_type: "Unknown",
+      number_length: 16,
+      bank_name: "未知银行",
+      bank_clean_name: "Unknown Bank",
+      issuer_currency: "USD",
+      country_alpha2: "US",
+      country_name: "未知国家",
+      auth_required: false,
+      authentication_name: "None",
+      product_name: "Unknown Card",
+      domestic_only: false,
+      gambling_blocked: false,
+      reloadable: false,
+      account_updater: false,
+      level2: false,
+      level3: false,
+      alm: false,
+      shared_bin: false
     }
     
     return HttpResponse.json({
@@ -873,13 +1078,30 @@ export const handlers: RequestHandler[] = [
         id: '1',
         bin: '414720',
         result: {
-          bin: '414720',
-          cardType: '信用卡',
-          cardBrand: 'Visa',
-          cardLevel: '经典卡',
-          bankName: '中国工商银行',
-          country: '中国',
-          currency: 'CNY'
+          bin_length: 6,
+          pan_or_token: "PAN",
+          card_brand: "Visa",
+          type: "Credit",
+          funding_source: "Credit",
+          prepaid: false,
+          card_segment_type: "Classic",
+          number_length: 16,
+          bank_name: "中国工商银行",
+          bank_clean_name: "ICBC",
+          issuer_currency: "CNY",
+          country_alpha2: "CN",
+          country_name: "中国",
+          auth_required: true,
+          authentication_name: "3D Secure",
+          product_name: "Visa Classic",
+          domestic_only: false,
+          gambling_blocked: true,
+          reloadable: false,
+          account_updater: true,
+          level2: true,
+          level3: false,
+          alm: true,
+          shared_bin: false
         },
         status: 'success',
         queryTime: new Date().toLocaleString('zh-CN')

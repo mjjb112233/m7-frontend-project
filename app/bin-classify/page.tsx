@@ -1,11 +1,12 @@
 "use client"
 
+import { useState } from "react"
 import { AuthGuard } from "@/components/layout/auth-guard"
 import { CreditCard } from "lucide-react"
 import Header from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { useBinClassify } from "./hooks/useBinClassify"
-import { CardInput, GroupedResults, QueryProgress, MultiDimensionFilter, DataSourceInfo } from "./components"
+import { CardInput, GroupedResults, QueryProgress, MultiDimensionFilter, DataSourceInfo, Toast } from "./components"
 
 export default function BinClassifyPage() {
   return (
@@ -16,6 +17,10 @@ export default function BinClassifyPage() {
 }
 
 function BinClassifyContent() {
+  const [toastVisible, setToastVisible] = useState(false)
+  const [toastMessage, setToastMessage] = useState('')
+  const [toastType, setToastType] = useState<'success' | 'error'>('success')
+
   const {
     // 状态
     cardInput,
@@ -46,6 +51,12 @@ function BinClassifyContent() {
     filteredCards
   } = useBinClassify()
 
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToastMessage(message)
+    setToastType(type)
+    setToastVisible(true)
+  }
+
   const groupCount = Object.keys(groupedResults).length
   const totalResults = Object.values(groupedResults).reduce((sum, cards) => sum + cards.length, 0)
   const hasQueryResults = classificationResult !== null
@@ -67,8 +78,25 @@ function BinClassifyContent() {
 
 
   // 复制卡号
-  const copyCardNumber = (cardNumber: string) => {
-    navigator.clipboard.writeText(cardNumber)
+  const copyCardNumber = async (cardNumber: string) => {
+    try {
+      await navigator.clipboard.writeText(cardNumber)
+      showToast('卡号已复制到剪贴板')
+    } catch (err) {
+      console.error('复制失败:', err)
+      try {
+        // 降级方案：创建临时文本区域
+        const textArea = document.createElement('textarea')
+        textArea.value = cardNumber
+        document.body.appendChild(textArea)
+        textArea.select()
+        document.execCommand('copy')
+        document.body.removeChild(textArea)
+        showToast('卡号已复制到剪贴板')
+      } catch (fallbackErr) {
+        showToast('复制失败，请手动复制', 'error')
+      }
+    }
   }
 
   // 开始新查询
@@ -87,7 +115,7 @@ function BinClassifyContent() {
     Object.entries(groupedResults).forEach(([groupName, cards]) => {
       exportText += `${groupName}:\n`
       cards.forEach((card) => {
-        exportText += `${card.cardNumber} | ${card.brand} | ${card.type} | ${card.level} | ${card.bank} | ${card.country} | ${card.currency}\n`
+        exportText += `${card.CardNumber} | ${card.CardBrand} | ${card.Type} | ${card.CardSegmentType} | ${card.BankName} | ${card.CountryName} | ${card.IssuerCurrency}\n`
       })
       exportText += "\n"
     })
@@ -181,9 +209,26 @@ function BinClassifyContent() {
             expandedGroups={expandedGroups}
             onToggleGroup={toggleGroup}
             onCopyCard={copyCardNumber}
-            onCopyGroup={(cards) => {
-              const groupData = cards.map((card) => card.cardNumber).join("\n")
-              navigator.clipboard.writeText(groupData)
+            onCopyGroup={async (cards) => {
+              const groupData = cards.map((card) => card.CardNumber).join("\n")
+              try {
+                await navigator.clipboard.writeText(groupData)
+                showToast(`已复制 ${cards.length} 张卡号到剪贴板`)
+              } catch (err) {
+                console.error('复制失败:', err)
+                try {
+                  // 降级方案
+                  const textArea = document.createElement('textarea')
+                  textArea.value = groupData
+                  document.body.appendChild(textArea)
+                  textArea.select()
+                  document.execCommand('copy')
+                  document.body.removeChild(textArea)
+                  showToast(`已复制 ${cards.length} 张卡号到剪贴板`)
+                } catch (fallbackErr) {
+                  showToast('复制失败，请手动复制', 'error')
+                }
+              }
             }}
             onCollapseAll={collapseAll}
             onExportData={exportData}
@@ -194,6 +239,13 @@ function BinClassifyContent() {
       </div>
       
       <Footer />
+      
+      <Toast
+        message={toastMessage}
+        type={toastType}
+        isVisible={toastVisible}
+        onClose={() => setToastVisible(false)}
+      />
     </div>
   )
 }

@@ -52,16 +52,16 @@ export function CardInfoTable({ cards, onCopyCards, onDownloadCards }: CardInfoT
               {cards.map((card, index) => (
                 <TableRow key={index}>
                   <TableCell className="font-mono text-sm">
-                    {card.cardNumber}
+                    {card.CardNumber}
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline">{card.brand}</Badge>
+                    <Badge variant="outline">{card.CardBrand}</Badge>
                   </TableCell>
-                  <TableCell>{card.type}</TableCell>
-                  <TableCell>{card.level}</TableCell>
-                  <TableCell>{card.bank}</TableCell>
-                  <TableCell>{card.country}</TableCell>
-                  <TableCell>{card.currency}</TableCell>
+                  <TableCell>{card.Type}</TableCell>
+                  <TableCell>{card.CardSegmentType}</TableCell>
+                  <TableCell>{card.BankName}</TableCell>
+                  <TableCell>{card.CountryName}</TableCell>
+                  <TableCell>{card.IssuerCurrency}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

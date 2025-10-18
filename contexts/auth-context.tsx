@@ -8,6 +8,8 @@ interface User {
   username: string // Added username field
   name: string
   avatar?: string
+  avatarSeed?: string // DiceBear avatar seed
+  avatarStyle?: string // DiceBear avatar style
   mCoins: number
   level: number // Added user level field
 }
@@ -107,28 +109,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const register = async (username: string, email: string, password: string): Promise<boolean> => {
     setIsLoading(true)
     try {
+      // 生成随机冒险家头像信息
+      const avatarSeeds = ['Felix', 'Aneka', 'Avery', 'Bailey', 'Brooklynn', 'Chloe', 'Christian', 'Easton', 'Emery', 'Hayden', 'Izzy', 'Kimberly', 'Lucy', 'Madeline', 'Maya', 'Nolan', 'Oliver', 'Riley', 'Savannah', 'Sophie']
+      const randomSeed = avatarSeeds[Math.floor(Math.random() * avatarSeeds.length)]
+      const avatarStyle = 'adventurer'
+      
       const { apiRequest } = await import('@/lib/api')
       const response = await apiRequest('/auth/register', {
         method: "POST",
-        body: JSON.stringify({ username, email, password }),
+        body: JSON.stringify({ 
+          username, 
+          email, 
+          password,
+          avatarSeed: randomSeed,
+          avatarStyle: avatarStyle
+        }),
       })
 
       if (response.success) {
-        const token = (response.data as any).token
-        const user = (response.data as any).user
-        
-        // 设置token到localStorage，7天过期
-        const expirationTime = new Date()
-        expirationTime.setDate(expirationTime.getDate() + 7)
-        localStorage.setItem("token", token)
-        localStorage.setItem("tokenExpiration", expirationTime.toISOString())
-        
-        setToken(token)
-        setUser(user)
+        // 注册成功，但不自动登录，返回成功状态
         return true
       } else {
         // 抛出错误，让前端处理错误信息
         const error = new Error(response.message || "注册失败")
+        ;(error as any).isApiError = true
+        ;(error as any).apiMessage = response.message
         throw error
       }
     } catch (error) {

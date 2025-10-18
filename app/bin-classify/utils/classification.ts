@@ -6,7 +6,7 @@ export function formatResults(groupedResults: GroupedResult): string {
   Object.entries(groupedResults).forEach(([category, cards]) => {
     result += `${category} (${cards.length} 张卡片):\n`
     cards.forEach(card => {
-      result += `  ${card.cardNumber} - ${card.brand} ${card.type} ${card.level}\n`
+      result += `  ${card.CardNumber} - ${card.CardBrand} ${card.Type} ${card.CardSegmentType}\n`
     })
     result += "\n"
   })

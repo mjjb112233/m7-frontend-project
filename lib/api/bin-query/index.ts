@@ -7,19 +7,6 @@ export interface BINQueryRequest {
 }
 
 export interface BINQueryResult {
-  bin: string
-  cardType: string
-  cardBrand: string
-  cardLevel: string
-  bankName: string
-  country: string
-  currency: string
-  website?: string
-  phone?: string
-}
-
-// 详细的BIN查询结果（包含所有字段）
-export interface DetailedBINQueryResult {
   bin_length: number           // BIN长度
   pan_or_token: string        // PAN或Token类型
   card_brand: string          // 卡品牌（VISA、MC等）
@@ -45,6 +32,9 @@ export interface DetailedBINQueryResult {
   alm: boolean              // ALM功能
   shared_bin: boolean       // 是否为共享BIN
 }
+
+// 为了向后兼容，保留DetailedBINQueryResult作为BINQueryResult的别名
+export type DetailedBINQueryResult = BINQueryResult
 
 export interface BINQueryResponse {
   success: boolean

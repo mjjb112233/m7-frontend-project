@@ -1,72 +1,65 @@
 import { useAuth } from "@/contexts/auth-context"
-import { authenticatedRequest } from "@/lib/api"
+import { authenticatedRequest } from "@/lib/api/request"
+import { BinClassifyRequest, BinClassifyQueryResponse, BinClassifyResultResponse } from "@/app/bin-classify/types"
 
 export function useBinClassifyAPI() {
   const { token } = useAuth()
   
-  // 获取BIN分类配置
-  const fetchBinClassifyConfig = async () => {
+  // 1. 开始BIN分类查询
+  const startBinClassifyQuery = async (cards: string[]): Promise<BinClassifyQueryResponse | null> => {
     if (!token) return null
     
     try {
-      const response = await authenticatedRequest('/bin-classify/config', token)
-      
-      if (response.success) {
-        return response.data
-      } else {
-        console.error('Failed to get BIN classification config:', response.message)
-        return null
+      const requestData: BinClassifyRequest = {
+        cards
       }
-    } catch (error) {
-      console.error('Error getting BIN classification config:', error)
-      return null
-    }
-  }
-  
-  // 开始BIN分类
-  const startBinClassify = async (requestData: any) => {
-    if (!token) return null
-    
-    try {
-      const response = await authenticatedRequest('/bin-classify/start', token, {
+      
+      const response = await authenticatedRequest<BinClassifyQueryResponse>('/bin-classify/query', token, {
         method: 'POST',
         body: JSON.stringify(requestData)
       })
       
       if (response.success) {
-        return response.data
+        return response
       } else {
-        console.error('Failed to start BIN classification:', response.message)
-        return null
+        console.error('Failed to start BIN classification query:', response.message)
+        return response
       }
     } catch (error) {
-      console.error('Error starting BIN classification:', error)
-      return null
+      console.error('Error starting BIN classification query:', error)
+      return {
+        success: false,
+        data: { queryId: '', status: 'failed' },
+        message: error instanceof Error ? error.message : 'Unknown error'
+      }
     }
   }
   
-  // 获取BIN分类结果
-  const fetchBinClassifyResults = async (taskId: string) => {
-    if (!token || !taskId) return null
+  // 2. 获取BIN分类查询结果
+  const getBinClassifyResults = async (queryId: string): Promise<BinClassifyResultResponse | null> => {
+    if (!token || !queryId) return null
     
     try {
-      const response = await authenticatedRequest(`/bin-classify/results?taskId=${taskId}`, token)
+      const response = await authenticatedRequest<BinClassifyResultResponse>(`/bin-classify/results/${queryId}`, token)
       
       if (response.success) {
-        return response.data
+        return response
       } else {
         console.error('Failed to get BIN classification results:', response.message)
-        return null
+        return response
       }
     } catch (error) {
       console.error('Error getting BIN classification results:', error)
-      return null
+      return {
+        success: false,
+        data: { queryId, status: 'failed' },
+        message: error instanceof Error ? error.message : 'Unknown error'
+      }
     }
   }
   
   return {
-    fetchBinClassifyConfig,
-    startBinClassify,
-    fetchBinClassifyResults,
+    startBinClassifyQuery,
+    getBinClassifyResults,
   }
 }

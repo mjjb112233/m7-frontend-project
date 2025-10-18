@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Copy, Download, MapPin, User, CreditCard, Phone, AlertCircle, Sparkles, CheckCircle, XCircle } from "lucide-react"
+import { Copy, Download, MapPin, User, CreditCard, Phone, Mail, AlertCircle, Sparkles, CheckCircle, XCircle } from "lucide-react"
 import Header from "@/components/layout/header"
 import { InfoGenerateFooter } from "@/components/layout/info-generate-footer"
 import { AuthContext } from "@/contexts/auth-context"
@@ -17,6 +17,7 @@ interface GeneratedInfo {
   year: string
   fullName: string
   phone: string
+  email: string
   address: string
   city: string
   state: string
@@ -166,7 +167,7 @@ export default function InfoGeneratePage() {
 
   // 复制到剪贴板
   const copyToClipboard = (info: GeneratedInfo) => {
-    const text = `卡号: ${info.cardNumber}\n有效期: ${info.month}/${info.year}\n姓名: ${info.fullName}\n电话: ${info.phone}\n地址: ${info.address}\n城市: ${info.city}\n州: ${info.state}\n邮编: ${info.zipCode}\n国家: ${info.country}`
+    const text = `卡号: ${info.cardNumber}\n有效期: ${info.month}/${info.year}\n姓名: ${info.fullName}\n电话: ${info.phone}\n邮箱: ${info.email}\n地址: ${info.address}\n城市: ${info.city}\n州: ${info.state}\n邮编: ${info.zipCode}\n国家: ${info.country}`
     
     navigator.clipboard.writeText(text).then(() => {
       showToastMessage("信息已复制到剪贴板", "success")
@@ -261,12 +262,19 @@ export default function InfoGeneratePage() {
       `+1-${Math.floor(Math.random() * 900 + 100)}-${Math.floor(Math.random() * 900 + 100)}-${Math.floor(Math.random() * 9000 + 1000)}`,
     ]
 
+    // 生成邮箱
+    const emailProviders = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'icloud.com']
+    const emailProvider = emailProviders[Math.floor(Math.random() * emailProviders.length)]
+    const emailPrefix = `${firstName.toLowerCase()}.${lastName.toLowerCase()}${Math.floor(Math.random() * 999 + 1)}`
+    const email = `${emailPrefix}@${emailProvider}`
+
     return {
       cardNumber,
       month: "06",
       year: "2028",
       fullName: `${firstName} ${lastName}`,
       phone: phoneFormats[Math.floor(Math.random() * phoneFormats.length)],
+      email,
       address: `${Math.floor(Math.random() * 9999 + 1)} ${street}`,
       city: city.name,
       state: location.state,
@@ -282,11 +290,11 @@ export default function InfoGeneratePage() {
 
     const csvContent =
       "data:text/csv;charset=utf-8," +
-      "卡号,有效期,姓名,电话,地址,城市,州,邮编,国家\n" +
+      "卡号,有效期,姓名,电话,邮箱,地址,城市,州,邮编,国家\n" +
       generatedData
         .map(
           (info) =>
-            `${info.cardNumber},${info.month}/${info.year},${info.fullName},${info.phone},${info.address},${info.city},${info.state},${info.zipCode},${info.country}`,
+            `${info.cardNumber},${info.month}/${info.year},${info.fullName},${info.phone},${info.email},${info.address},${info.city},${info.state},${info.zipCode},${info.country}`,
         )
         .join("\n")
 
@@ -540,6 +548,14 @@ export default function InfoGeneratePage() {
                             </div>
                             <span className="text-gray-600">电话:</span>
                             <span className="font-medium font-mono text-gray-900">{info.phone}</span>
+                          </div>
+
+                          <div className="col-span-2 flex items-center space-x-2">
+                            <div className="w-4 h-4 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center shadow-sm">
+                              <Mail className="h-2 w-2 text-white" />
+                            </div>
+                            <span className="text-gray-600">邮箱:</span>
+                            <span className="font-medium font-mono text-gray-900 text-xs">{info.email}</span>
                           </div>
 
                           <div className="flex items-center space-x-2">

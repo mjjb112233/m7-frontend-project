@@ -9,6 +9,8 @@ export interface User {
   level: number
   mCoins: number
   avatar?: string
+  avatarSeed?: string // DiceBear avatar seed
+  avatarStyle?: string // DiceBear avatar style
 }
 
 export interface AuthContextType {
@@ -36,7 +38,7 @@ export interface RegisterRequest {
   username: string
   email: string
   password: string
-  confirmPassword: string
+  // confirmPassword is only used for frontend validation, not sent to backend
 }
 
 export interface UserPayload {

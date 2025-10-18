@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 import { TrendingUp, Copy } from "lucide-react"
 import { useLanguage } from "@/contexts/language-context"
+import { useAuth } from "@/contexts/auth-context"
 import { useCVVCheckAPI } from "@/lib/api"
 import { formatTimestamp } from "@/lib/utils/format"
 import { CVVResult } from "../../types"
@@ -23,6 +24,7 @@ export function ResultsStep({
   setCopySuccess
 }: ResultsStepProps) {
   const { t } = useLanguage()
+  const { refreshUserInfo } = useAuth()
   const api = useCVVCheckAPI()
 
   // 内部状态管理
@@ -75,6 +77,8 @@ export function ResultsStep({
         setInvalidResults(invalid)
         setUnknownResults(unknown)
         
+        // 刷新用户信息以获取最新的M币余额
+        await refreshUserInfo()
 
       } else {
         console.log("[ResultsStep] Failed to get detection results")

@@ -55,8 +55,7 @@
 {
   "username": "string",
   "email": "string",
-  "password": "string",
-  "confirmPassword": "string"
+  "password": "string"
 }
 ```
 - **响应**:
@@ -64,12 +63,15 @@
 {
   "success": true,
   "data": {
+    "token": "string",
     "user": {
       "id": "string",
       "username": "string",
       "email": "string",
       "level": 1,
-      "mCoins": 50.00
+      "mCoins": 50.00,
+      "avatarSeed": "Felix",
+      "avatarStyle": "adventurer"
     }
   },
   "message": "Registration successful"

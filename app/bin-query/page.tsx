@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Search, CreditCard, Building, Globe, Phone, ExternalLink, AlertCircle, CheckCircle } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
-import { useBINQuery, type BINQueryResult, type DetailedBINQueryResult } from "@/lib/api/bin-query"
+import { useBINQuery, type BINQueryResult } from "@/lib/api/bin-query"
 import BINUnifiedCard from "@/components/business/bin-unified-card"
 
 export default function BINQueryPage() {
@@ -26,7 +26,7 @@ function BINQueryContent() {
   const { isLoading, error, queryBIN } = useBINQuery()
   const [binInput, setBinInput] = useState("")
   const [queryResult, setQueryResult] = useState<BINQueryResult | null>(null)
-  const [detailedResult, setDetailedResult] = useState<DetailedBINQueryResult | null>(null)
+  const [detailedResult, setDetailedResult] = useState<BINQueryResult | null>(null)
   const [showResult, setShowResult] = useState(false)
   const [showError, setShowError] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
@@ -59,36 +59,7 @@ function BINQueryContent() {
       
       if (result.success && result.data) {
         setQueryResult(result.data)
-        
-        // TODO(stagewise): 这里使用模拟的详细数据，实际应该从API获取
-        const mockDetailedData: DetailedBINQueryResult = {
-          bin_length: 6,
-          pan_or_token: "PAN",
-          card_brand: result.data.cardBrand || "VISA",
-          type: result.data.cardType || "Credit",
-          funding_source: "Credit",
-          prepaid: false,
-          card_segment_type: "Standard",
-          number_length: 16,
-          bank_name: result.data.bankName || "未知银行",
-          bank_clean_name: (result.data.bankName || "未知银行").replace(/[^a-zA-Z0-9\s]/g, ''),
-          issuer_currency: result.data.currency || "USD",
-          country_alpha2: "US",
-          country_name: result.data.country || "美国",
-          auth_required: true,
-          authentication_name: "3D Secure",
-          product_name: `${result.data.cardBrand || "VISA"} ${result.data.cardLevel || "Standard"}`,
-          domestic_only: false,
-          gambling_blocked: true,
-          reloadable: false,
-          account_updater: true,
-          level2: true,
-          level3: false,
-          alm: true,
-          shared_bin: false
-        }
-        
-        setDetailedResult(mockDetailedData)
+        setDetailedResult(result.data) // 直接使用API返回的数据
         setShowResult(true)
       } else {
         setErrorMessage(result.message || "查询失败")

@@ -18,11 +18,11 @@ import {
   Phone,
   ExternalLink
 } from "lucide-react"
-import type { BINQueryResult, DetailedBINQueryResult } from "@/lib/api/bin-query"
+import type { BINQueryResult } from "@/lib/api/bin-query"
 
 interface BINUnifiedCardProps {
   basicData: BINQueryResult
-  detailedData: DetailedBINQueryResult
+  detailedData: BINQueryResult
   className?: string
 }
 
@@ -53,7 +53,7 @@ export function BINUnifiedCard({ basicData, detailedData, className = "" }: BINU
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center shadow-lg">
               <CheckCircle className="h-5 w-5 text-white" />
             </div>
-            BIN查询结果: {basicData.bin}
+            BIN查询结果
           </CardTitle>
         </CardHeader>
 
@@ -73,7 +73,7 @@ export function BINUnifiedCard({ basicData, detailedData, className = "" }: BINU
                 </div>
                 <div>
                   <div className="text-xs text-gray-600">BIN长度</div>
-                  <div className="font-medium text-gray-900">{detailedData.bin_length} 位</div>
+                  <div className="font-medium text-gray-900">{basicData.bin_length} 位</div>
                 </div>
               </div>
 
@@ -83,7 +83,7 @@ export function BINUnifiedCard({ basicData, detailedData, className = "" }: BINU
                 </div>
                 <div>
                   <div className="text-xs text-gray-600">卡片品牌</div>
-                  <div className="font-medium text-gray-900">{basicData.cardBrand}</div>
+                  <div className="font-medium text-gray-900">{basicData.card_brand}</div>
                 </div>
               </div>
 
@@ -93,8 +93,8 @@ export function BINUnifiedCard({ basicData, detailedData, className = "" }: BINU
                 </div>
                 <div>
                   <div className="text-xs text-gray-600">卡片类型</div>
-                  <Badge className={`text-xs ${cardTypeColor[detailedData.type as keyof typeof cardTypeColor] || 'bg-gray-100 text-gray-800'}`}>
-                    {basicData.cardType}
+                  <Badge className={`text-xs ${cardTypeColor[basicData.type as keyof typeof cardTypeColor] || 'bg-gray-100 text-gray-800'}`}>
+                    {basicData.type}
                   </Badge>
                 </div>
               </div>
@@ -105,7 +105,7 @@ export function BINUnifiedCard({ basicData, detailedData, className = "" }: BINU
                 </div>
                 <div>
                   <div className="text-xs text-gray-600">资金来源</div>
-                  <div className="font-medium text-gray-900">{detailedData.funding_source}</div>
+                  <div className="font-medium text-gray-900">{basicData.funding_source}</div>
                 </div>
               </div>
 
@@ -115,7 +115,7 @@ export function BINUnifiedCard({ basicData, detailedData, className = "" }: BINU
                 </div>
                 <div>
                   <div className="text-xs text-gray-600">卡号长度</div>
-                  <div className="font-medium text-gray-900">{detailedData.number_length} 位</div>
+                  <div className="font-medium text-gray-900">{basicData.number_length} 位</div>
                 </div>
               </div>
 
@@ -125,7 +125,7 @@ export function BINUnifiedCard({ basicData, detailedData, className = "" }: BINU
                 </div>
                 <div>
                   <div className="text-xs text-gray-600">卡段类型</div>
-                  <div className="font-medium text-gray-900">{detailedData.card_segment_type}</div>
+                  <div className="font-medium text-gray-900">{basicData.card_segment_type}</div>
                 </div>
               </div>
 
@@ -135,7 +135,7 @@ export function BINUnifiedCard({ basicData, detailedData, className = "" }: BINU
                 </div>
                 <div>
                   <div className="text-xs text-gray-600">卡片等级</div>
-                  <div className="font-medium text-gray-900">{basicData.cardLevel}</div>
+                  <div className="font-medium text-gray-900">{basicData.card_segment_type}</div>
                 </div>
               </div>
 
@@ -145,7 +145,7 @@ export function BINUnifiedCard({ basicData, detailedData, className = "" }: BINU
                 </div>
                 <div>
                   <div className="text-xs text-gray-600">PAN/Token</div>
-                  <div className="font-medium text-gray-900">{detailedData.pan_or_token}</div>
+                  <div className="font-medium text-gray-900">{basicData.pan_or_token}</div>
                 </div>
               </div>
             </div>
@@ -166,7 +166,7 @@ export function BINUnifiedCard({ basicData, detailedData, className = "" }: BINU
                 </div>
                 <div>
                   <div className="text-xs text-gray-600">银行名称</div>
-                  <div className="font-medium text-gray-900">{basicData.bankName}</div>
+                  <div className="font-medium text-gray-900">{basicData.bank_name}</div>
                 </div>
               </div>
 
@@ -176,7 +176,7 @@ export function BINUnifiedCard({ basicData, detailedData, className = "" }: BINU
                 </div>
                 <div>
                   <div className="text-xs text-gray-600">银行清洁名称</div>
-                  <div className="font-medium text-gray-900">{detailedData.bank_clean_name}</div>
+                  <div className="font-medium text-gray-900">{basicData.bank_clean_name}</div>
                 </div>
               </div>
 
@@ -187,7 +187,7 @@ export function BINUnifiedCard({ basicData, detailedData, className = "" }: BINU
                 <div>
                   <div className="text-xs text-gray-600">发卡国家</div>
                   <div className="font-medium text-gray-900">
-                    {detailedData.country_name} ({detailedData.country_alpha2})
+                    {basicData.country_name} ({basicData.country_alpha2})
                   </div>
                 </div>
               </div>
@@ -198,7 +198,7 @@ export function BINUnifiedCard({ basicData, detailedData, className = "" }: BINU
                 </div>
                 <div>
                   <div className="text-xs text-gray-600">发行货币</div>
-                  <div className="font-medium text-gray-900">{detailedData.issuer_currency}</div>
+                  <div className="font-medium text-gray-900">{basicData.issuer_currency}</div>
                 </div>
               </div>
             </div>
@@ -219,7 +219,7 @@ export function BINUnifiedCard({ basicData, detailedData, className = "" }: BINU
                 </div>
                 <div>
                   <div className="text-xs text-gray-600">产品名称</div>
-                  <div className="font-medium text-gray-900">{detailedData.product_name}</div>
+                  <div className="font-medium text-gray-900">{basicData.product_name}</div>
                 </div>
               </div>
 
@@ -229,7 +229,7 @@ export function BINUnifiedCard({ basicData, detailedData, className = "" }: BINU
                 </div>
                 <div>
                   <div className="text-xs text-gray-600">认证名称</div>
-                  <div className="font-medium text-gray-900">{detailedData.authentication_name}</div>
+                  <div className="font-medium text-gray-900">{basicData.authentication_name}</div>
                 </div>
               </div>
             </div>
@@ -272,8 +272,8 @@ export function BINUnifiedCard({ basicData, detailedData, className = "" }: BINU
             </div>
           </div>
 
-          {/* 联系信息区域 */}
-          {(basicData.website || basicData.phone) && (
+          {/* 联系信息区域 - 暂时隐藏，新的API响应中没有这些字段 */}
+          {false && (
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-6 h-6 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center shadow-lg">

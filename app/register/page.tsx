@@ -32,14 +32,13 @@ export default function RegisterPage() {
   const [showSuccessAlert, setShowSuccessAlert] = useState(false)
   const [showErrorAlert, setShowErrorAlert] = useState(false)
   const [errorMessage, setErrorMessage] = useState("")
-  const [fieldErrors, setFieldErrors] = useState<{[key: string]: string}>({})
+  // 移除了 fieldErrors，因为新的响应结构不包含字段级错误
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     // 清除之前的错误状态
     setShowErrorAlert(false)
-    setFieldErrors({})
     
     if (formData.password !== formData.confirmPassword) {
       setErrorMessage("密码不匹配")
@@ -65,12 +64,8 @@ export default function RegisterPage() {
       console.error("Registration error:", error)
       
       // 处理API返回的错误信息
-      if (error.response) {
-        const errorData = await error.response.json()
-        if (errorData.errors) {
-          setFieldErrors(errorData.errors)
-        }
-        setErrorMessage(errorData.message || "注册过程中发生错误")
+      if (error.isApiError && error.apiMessage) {
+        setErrorMessage(error.apiMessage)
       } else {
         setErrorMessage("注册过程中发生错误")
       }
@@ -126,7 +121,6 @@ export default function RegisterPage() {
                         size="sm"
                         onClick={() => {
                           setShowErrorAlert(false)
-                          setFieldErrors({})
                           setErrorMessage("")
                         }}
                         className="text-red-700 border-red-300 hover:bg-red-100"
@@ -148,11 +142,9 @@ export default function RegisterPage() {
                     value={formData.username}
                     onChange={(e) => handleInputChange("username", e.target.value)}
                     required
-                    className={`h-11 ${fieldErrors.username ? "border-red-500" : ""}`}
+                    className="h-11"
                   />
-                  {fieldErrors.username && (
-                    <p className="text-xs text-red-600">{fieldErrors.username}</p>
-                  )}
+
                 </div>
 
                 <div className="space-y-2">
@@ -164,11 +156,9 @@ export default function RegisterPage() {
                     value={formData.email}
                     onChange={(e) => handleInputChange("email", e.target.value)}
                     required
-                    className={`h-11 ${fieldErrors.email ? "border-red-500" : ""}`}
+                    className="h-11"
                   />
-                  {fieldErrors.email && (
-                    <p className="text-xs text-red-600">{fieldErrors.email}</p>
-                  )}
+
                 </div>
 
                 <div className="space-y-2">
@@ -181,7 +171,7 @@ export default function RegisterPage() {
                       value={formData.password}
                       onChange={(e) => handleInputChange("password", e.target.value)}
                       required
-                      className={`h-11 pr-10 ${fieldErrors.password ? "border-red-500" : ""}`}
+                      className="h-11 pr-10"
                     />
                     <Button
                       type="button"
@@ -212,9 +202,7 @@ export default function RegisterPage() {
                       ))}
                     </div>
                   )}
-                  {fieldErrors.password && (
-                    <p className="text-xs text-red-600">{fieldErrors.password}</p>
-                  )}
+
                 </div>
 
                 <div className="space-y-2">

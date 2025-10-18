@@ -6,6 +6,7 @@ export interface GeneratedInfo {
   year: string
   fullName: string
   phone: string
+  email: string
   address: string
   city: string
   state: string

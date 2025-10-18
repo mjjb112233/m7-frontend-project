@@ -30,8 +30,7 @@ export const API_ENDPOINTS = {
   },
   // BIN分类相关
   BIN_CLASSIFY: {
-    CONFIG: '/bin-classify/config',
-    START: '/bin-classify/start',
+    QUERY: '/bin-classify/query',
     RESULTS: '/bin-classify/results',
   },
   // BIN查询相关

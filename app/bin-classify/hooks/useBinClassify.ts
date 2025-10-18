@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo, useEffect, useRef } from "react"
 import { CardInfo, GroupedResult, ProcessingStatus, ClassificationResult, BinClassifyConfig, BinClassifyState } from "../types"
+import { useBinClassifyAPI } from "@/lib/api/bin-classify"
 
 interface FilterOption {
   key: string
@@ -39,6 +40,9 @@ export function useBinClassify() {
     sortOrder: "asc"
   })
 
+  const { startBinClassifyQuery, getBinClassifyResults } = useBinClassifyAPI()
+  const [currentQueryId, setCurrentQueryId] = useState<string | null>(null)
+
   // 处理卡片分类
   const processCards = useCallback(async (cards: string[]) => {
     shouldStopProcessing.current = false
@@ -51,57 +55,78 @@ export function useBinClassify() {
       progress: 0
     })
 
-    const startTime = Date.now()
-    const results: CardInfo[] = []
-    
-    for (let i = 0; i < cards.length; i++) {
-      // 检查是否应该停止处理
-      if (shouldStopProcessing.current) {
-        break
+    try {
+      // 1. 发起查询请求
+      const queryResponse = await startBinClassifyQuery(cards)
+      
+      if (!queryResponse || !queryResponse.success) {
+        throw new Error(queryResponse?.message || 'Failed to start query')
       }
-      
-      const card = cards[i]
-      setProcessingStatus(prev => ({
-        ...prev,
-        processedCount: i + 1,
-        currentCard: card,
-        progress: ((i + 1) / cards.length) * 100
-      }))
-      
-      // 模拟处理延迟
-      await new Promise(resolve => setTimeout(resolve, 100))
-      
-      // 再次检查是否应该停止处理
-      if (shouldStopProcessing.current) {
-        break
-      }
-      
-      // 生成卡片信息
-      const cardInfo = generateCardInfo(card)
-      results.push(cardInfo)
-    }
 
-    // 只有在没有被中断的情况下才保存结果
-    if (!shouldStopProcessing.current && results.length > 0) {
-      // 保存所有卡片数据
-      setAllCards(results)
-      
-      // 按选择的分类进行分组
-      const grouped = groupCardsByCategory(results, config.selectedCategory)
-      setGroupedResults(grouped)
-      
-      const processingTime = Date.now() - startTime
-      setClassificationResult({
-        groupedResults: grouped,
-        totalCards: results.length,
-        categories: Object.keys(grouped),
-        processingTime
-      })
+      const queryId = queryResponse.data.queryId
+      setCurrentQueryId(queryId)
+
+      // 2. 轮询获取结果
+      const pollInterval = setInterval(async () => {
+        if (shouldStopProcessing.current) {
+          clearInterval(pollInterval)
+          return
+        }
+
+        const resultResponse = await getBinClassifyResults(queryId)
+        
+        if (!resultResponse || !resultResponse.success) {
+          console.error('Failed to get results:', resultResponse?.message)
+          return
+        }
+
+        const { status, totalCount, processedCount, results } = resultResponse.data
+
+        // 更新进度
+        if (status === 'processing' && totalCount && processedCount !== undefined) {
+          setProcessingStatus(prev => ({
+            ...prev,
+            processedCount,
+            totalCount,
+            progress: (processedCount / totalCount) * 100
+          }))
+        }
+
+        // 查询完成
+        if (status === 'completed' && results) {
+          clearInterval(pollInterval)
+          
+          // 直接使用API返回的数据
+          setAllCards(results)
+          
+          // 按选择的分类进行分组
+          const grouped = groupCardsByCategory(results, selectedCategory)
+          setGroupedResults(grouped)
+          
+          setClassificationResult({
+            groupedResults: grouped,
+            totalCards: results.length,
+            categories: Object.keys(grouped),
+            processingTime: 0 // API不返回处理时间
+          })
+
+          setIsProcessing(false)
+          setProcessingStatus(prev => ({ ...prev, isProcessing: false }))
+        }
+
+        // 查询失败
+        if (status === 'failed') {
+          clearInterval(pollInterval)
+          throw new Error('Query failed')
+        }
+      }, 5000) // 每5秒轮询一次
+
+    } catch (error) {
+      console.error('Error processing cards:', error)
+      setIsProcessing(false)
+      setProcessingStatus(prev => ({ ...prev, isProcessing: false }))
     }
-    
-    setIsProcessing(false)
-    setProcessingStatus(prev => ({ ...prev, isProcessing: false }))
-  }, [config.selectedCategory])
+  }, [startBinClassifyQuery, getBinClassifyResults])
 
   // 切换分组展开状态
   const toggleGroup = useCallback((groupKey: string) => {
@@ -125,10 +150,20 @@ export function useBinClassify() {
   const filteredCards = useMemo(() => {
     if (activeFilters.length === 0) return allCards
     
+    const dimensionMap: Record<string, keyof CardInfo> = {
+      'brand': 'CardBrand',
+      'type': 'Type',
+      'level': 'CardSegmentType',
+      'bank': 'BankName',
+      'country': 'CountryName',
+      'currency': 'IssuerCurrency'
+    }
+    
     return allCards.filter(card => {
       return activeFilters.every(filter => {
         if (filter.value === "all") return true
-        return card[filter.key as keyof CardInfo] === filter.value
+        const field = dimensionMap[filter.key]
+        return card[field] === filter.value
       })
     })
   }, [allCards, activeFilters])
@@ -136,11 +171,18 @@ export function useBinClassify() {
   // 获取可用的筛选选项
   const availableOptions = useMemo(() => {
     const options: Record<string, string[]> = {}
-    const dimensions = ['brand', 'type', 'level', 'bank', 'country', 'currency']
+    const dimensionMap: Record<string, keyof CardInfo> = {
+      'brand': 'CardBrand',
+      'type': 'Type',
+      'level': 'CardSegmentType',
+      'bank': 'BankName',
+      'country': 'CountryName',
+      'currency': 'IssuerCurrency'
+    }
     
-    dimensions.forEach(dim => {
-      const uniqueValues = Array.from(new Set(allCards.map(card => card[dim as keyof CardInfo] as string)))
-      options[dim] = uniqueValues.sort()
+    Object.entries(dimensionMap).forEach(([key, field]) => {
+      const uniqueValues = Array.from(new Set(allCards.map(card => card[field] as string)))
+      options[key] = uniqueValues.sort()
     })
     
     return options
@@ -193,6 +235,7 @@ export function useBinClassify() {
     shouldStopProcessing.current = true
     setIsProcessing(false)
     setProcessingStatus(prev => ({ ...prev, isProcessing: false }))
+    setCurrentQueryId(null)
   }, [])
 
   // 重置状态
@@ -205,6 +248,7 @@ export function useBinClassify() {
     setClassificationResult(null)
     setAllCards([])
     setActiveFilters([])
+    setCurrentQueryId(null)
     setProcessingStatus({
       isProcessing: false,
       processedCount: 0,
@@ -379,8 +423,19 @@ function generateRandomCardInfo(bin: string) {
 function groupCardsByCategory(cards: CardInfo[], category: string): GroupedResult {
   const grouped: GroupedResult = {}
   
+  const dimensionMap: Record<string, keyof CardInfo> = {
+    'brand': 'CardBrand',
+    'type': 'Type',
+    'level': 'CardSegmentType',
+    'bank': 'BankName',
+    'country': 'CountryName',
+    'currency': 'IssuerCurrency'
+  }
+  
+  const field = dimensionMap[category] || 'CountryName'
+  
   cards.forEach(card => {
-    const key = card[category as keyof CardInfo] as string
+    const key = card[field] as string
     if (!grouped[key]) {
       grouped[key] = []
     }
