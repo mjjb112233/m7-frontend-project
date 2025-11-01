@@ -1,6 +1,7 @@
 import { useAuth } from "@/contexts/auth-context"
 import { authenticatedRequest } from "@/lib/api/request"
-import { BinClassifyRequest, BinClassifyQueryResponse, BinClassifyResultResponse } from "@/app/bin-classify/types"
+import { API_ENDPOINTS } from "@/constants/api"
+import { BinClassifyRequest, BinClassifyQueryResponse, BinClassifyResultResponse, BinClassifyCancelResponse } from "@/app/bin-classify/types"
 
 export function useBinClassifyAPI() {
   const { token } = useAuth()
@@ -14,7 +15,7 @@ export function useBinClassifyAPI() {
         cards
       }
       
-      const response = await authenticatedRequest<BinClassifyQueryResponse>('/bin-classify/query', token, {
+      const response = await authenticatedRequest<BinClassifyQueryResponse>(API_ENDPOINTS.BIN_CLASSIFY.QUERY, token, {
         method: 'POST',
         body: JSON.stringify(requestData)
       })
@@ -40,7 +41,7 @@ export function useBinClassifyAPI() {
     if (!token || !queryId) return null
     
     try {
-      const response = await authenticatedRequest<BinClassifyResultResponse>(`/bin-classify/results/${queryId}`, token)
+      const response = await authenticatedRequest<BinClassifyResultResponse>(`${API_ENDPOINTS.BIN_CLASSIFY.RESULTS}/${queryId}`, token)
       
       if (response.success) {
         return response
@@ -58,8 +59,34 @@ export function useBinClassifyAPI() {
     }
   }
   
+  // 3. 取消BIN分类查询
+  const cancelBinClassifyQuery = async (queryId: string): Promise<BinClassifyCancelResponse | null> => {
+    if (!token || !queryId) return null
+    
+    try {
+      const response = await authenticatedRequest<BinClassifyCancelResponse>(`${API_ENDPOINTS.BIN_CLASSIFY.CANCEL}/${queryId}`, token, {
+        method: 'POST'
+      })
+      
+      if (response.success) {
+        return response
+      } else {
+        console.error('Failed to cancel BIN classification query:', response.message)
+        return response
+      }
+    } catch (error) {
+      console.error('Error cancelling BIN classification query:', error)
+      return {
+        success: false,
+        data: null,
+        message: error instanceof Error ? error.message : 'Unknown error'
+      }
+    }
+  }
+  
   return {
     startBinClassifyQuery,
     getBinClassifyResults,
+    cancelBinClassifyQuery,
   }
 }

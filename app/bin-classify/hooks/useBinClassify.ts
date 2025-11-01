@@ -8,6 +8,93 @@ interface FilterOption {
   value: string
 }
 
+// 使用Web Worker进行大数据筛选
+const useWebWorkerFilter = () => {
+  const workerRef = useRef<Worker | null>(null)
+
+  useEffect(() => {
+    // 创建内联Web Worker - 优化版本
+    const workerCode = `
+      self.onmessage = function(e) {
+        const { cards, filters, dimensionMap } = e.data;
+        
+        // 分批处理以避免占用太多内存
+        const batchSize = 2000;
+        const filteredCards = [];
+        
+        for (let i = 0; i < cards.length; i += batchSize) {
+          const batch = cards.slice(i, i + batchSize);
+          const filteredBatch = batch.filter(card => {
+            return filters.every(filter => {
+              if (filter.value === "all") return true;
+              const field = dimensionMap[filter.key];
+              return card[field] === filter.value;
+            });
+          });
+          filteredCards.push(...filteredBatch);
+          
+          // 发送进度更新
+          if (i % (batchSize * 5) === 0) {
+            self.postMessage({ 
+              type: 'progress', 
+              processed: Math.min(i + batchSize, cards.length),
+              total: cards.length 
+            });
+          }
+        }
+        
+        self.postMessage({ type: 'complete', filteredCards });
+      };
+    `
+    
+    const blob = new Blob([workerCode], { type: 'application/javascript' })
+    workerRef.current = new Worker(URL.createObjectURL(blob))
+    
+    return () => {
+      if (workerRef.current) {
+        workerRef.current.terminate()
+        workerRef.current = null
+      }
+    }
+  }, [])
+
+  const filterWithWorker = useCallback((cards: CardInfo[], filters: FilterOption[]): Promise<CardInfo[]> => {
+    return new Promise((resolve) => {
+      if (!workerRef.current || filters.length === 0) {
+        resolve(cards)
+        return
+      }
+
+      const dimensionMap = {
+        'brand': 'cardBrand',
+        'type': 'type',
+        'level': 'cardSegmentType',
+        'bank': 'bankName',
+        'country': 'countryName',
+        'product': 'productName'
+      }
+
+      workerRef.current.onmessage = (e) => {
+        const { type, filteredCards, processed, total } = e.data
+        
+        if (type === 'progress') {
+          // 可以在这里更新进度显示
+          console.log(`筛选进度: ${processed}/${total}`)
+        } else if (type === 'complete') {
+          resolve(filteredCards)
+        } else {
+          // 兼容旧格式
+          resolve(filteredCards || e.data.filteredCards)
+        }
+      }
+
+      workerRef.current.postMessage({ cards, filters, dimensionMap })
+    })
+  }, [])
+
+  return filterWithWorker
+}
+
 export function useBinClassify() {
   // 基础状态
   const [cardInput, setCardInput] = useState("")
@@ -33,6 +120,12 @@ export function useBinClassify() {
   const [activeFilters, setActiveFilters] = useState<FilterOption[]>([])
   const [allCards, setAllCards] = useState<CardInfo[]>([])
   
+  // 添加防抖状态
+  const [isFiltering, setIsFiltering] = useState(false)
+  const [filteredCards, setFilteredCards] = useState<CardInfo[]>([])
+  const filterTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const filterWithWorker = useWebWorkerFilter()
+  
   // 配置
   const [config, setConfig] = useState<BinClassifyConfig>({
     selectedCategory: "country",
@@ -40,7 +133,7 @@ export function useBinClassify() {
     sortOrder: "asc"
   })
 
-  const { startBinClassifyQuery, getBinClassifyResults } = useBinClassifyAPI()
+  const { startBinClassifyQuery, getBinClassifyResults, cancelBinClassifyQuery } = useBinClassifyAPI()
   const [currentQueryId, setCurrentQueryId] = useState<string | null>(null)
 
   // 处理卡片分类
@@ -80,10 +173,10 @@ export function useBinClassify() {
           return
         }
 
-        const { status, totalCount, processedCount, results } = resultResponse.data
+        const { status, totalCount, processedCount, pendingCount, results } = resultResponse.data
 
         // 更新进度
-        if (status === 'processing' && totalCount && processedCount !== undefined) {
+        if ((status === 'pending' || status === 'running') && totalCount && processedCount !== undefined) {
           setProcessingStatus(prev => ({
             ...prev,
             processedCount,
@@ -98,35 +191,53 @@ export function useBinClassify() {
           
           // 直接使用API返回的数据
           setAllCards(results)
+          setFilteredCards(results) // 初始化筛选结果
           
-          // 按选择的分类进行分组
-          const grouped = groupCardsByCategory(results, selectedCategory)
-          setGroupedResults(grouped)
-          
-          setClassificationResult({
-            groupedResults: grouped,
-            totalCards: results.length,
-            categories: Object.keys(grouped),
-            processingTime: 0 // API不返回处理时间
-          })
+          // 使用requestIdleCallback进行异步分组
+          if (window.requestIdleCallback) {
+            window.requestIdleCallback(() => {
+              const grouped = groupCardsByCategory(results, selectedCategory)
+              setGroupedResults(grouped)
+              
+              setClassificationResult({
+                groupedResults: grouped,
+                totalCards: results.length,
+                categories: Object.keys(grouped),
+                processingTime: 0
+              })
+            })
+          } else {
+            // 降级到setTimeout
+            setTimeout(() => {
+              const grouped = groupCardsByCategory(results, selectedCategory)
+              setGroupedResults(grouped)
+              
+              setClassificationResult({
+                groupedResults: grouped,
+                totalCards: results.length,
+                categories: Object.keys(grouped),
+                processingTime: 0
+              })
+            }, 0)
+          }
 
           setIsProcessing(false)
           setProcessingStatus(prev => ({ ...prev, isProcessing: false }))
         }
 
-        // 查询失败
-        if (status === 'failed') {
+        // 查询失败或被取消
+        if (status === 'failed' || status === 'cancelled') {
           clearInterval(pollInterval)
-          throw new Error('Query failed')
+          throw new Error(status === 'failed' ? 'Query failed' : 'Query cancelled')
         }
-      }, 5000) // 每5秒轮询一次
+      }, 1000) // 每1秒轮询一次
 
     } catch (error) {
       console.error('Error processing cards:', error)
       setIsProcessing(false)
       setProcessingStatus(prev => ({ ...prev, isProcessing: false }))
     }
-  }, [startBinClassifyQuery, getBinClassifyResults])
+  }, [startBinClassifyQuery, getBinClassifyResults, selectedCategory])
 
   // 切换分组展开状态
   const toggleGroup = useCallback((groupKey: string) => {
@@ -146,42 +257,147 @@ export function useBinClassify() {
     setExpandedGroups(new Set())
   }, [])
 
-  // 筛选卡片
-  const filteredCards = useMemo(() => {
-    if (activeFilters.length === 0) return allCards
-    
-    const dimensionMap: Record<string, keyof CardInfo> = {
-      'brand': 'CardBrand',
-      'type': 'Type',
-      'level': 'CardSegmentType',
-      'bank': 'BankName',
-      'country': 'CountryName',
-      'currency': 'IssuerCurrency'
+  // 异步筛选函数
+  const performFilter = useCallback(async (cards: CardInfo[], filters: FilterOption[]) => {
+    if (filters.length === 0) {
+      return cards
     }
-    
-    return allCards.filter(card => {
-      return activeFilters.every(filter => {
-        if (filter.value === "all") return true
-        const field = dimensionMap[filter.key]
-        return card[field] === filter.value
-      })
-    })
-  }, [allCards, activeFilters])
 
-  // 获取可用的筛选选项
+    // 对于大数据集，使用Web Worker
+    if (cards.length > 1000) {
+      return await filterWithWorker(cards, filters)
+    }
+
+    // 小数据集使用同步筛选，但分批处理
+    const dimensionMap: Record<string, keyof CardInfo> = {
+      'brand': 'cardBrand',
+      'type': 'type',
+      'level': 'cardSegmentType',
+      'bank': 'bankName',
+      'country': 'countryName',
+      'product': 'productName'
+    }
+
+    return new Promise<CardInfo[]>((resolve) => {
+      const batchSize = 500 // 减小批处理大小以提高响应性
+      const result: CardInfo[] = []
+      let index = 0
+
+      const processBatch = () => {
+        const batch = cards.slice(index, index + batchSize)
+        const filteredBatch = batch.filter(card => {
+          return filters.every(filter => {
+            if (filter.value === "all") return true
+            const field = dimensionMap[filter.key]
+            return card[field] === filter.value
+          })
+        })
+        
+        result.push(...filteredBatch)
+        index += batchSize
+
+        if (index < cards.length) {
+          // 使用setTimeout让出控制权，避免阻塞UI
+          setTimeout(processBatch, 0)
+        } else {
+          resolve(result)
+        }
+      }
+
+      processBatch()
+    })
+  }, [filterWithWorker])
+
+  // 处理筛选变化
+  useEffect(() => {
+    if (allCards.length === 0) {
+      setFilteredCards([])
+      return
+    }
+
+    // 清除之前的定时器
+    if (filterTimeoutRef.current) {
+      clearTimeout(filterTimeoutRef.current)
+      filterTimeoutRef.current = null
+    }
+
+    setIsFiltering(true)
+
+    // 使用防抖
+    const delay = activeFilters.length > 0 ? 300 : 0
+    
+    filterTimeoutRef.current = setTimeout(async () => {
+      try {
+        const filtered = await performFilter(allCards, activeFilters)
+        setFilteredCards(filtered)
+      } catch (error) {
+        console.error('Filter error:', error)
+        setFilteredCards(allCards) // 降级到显示所有数据
+      } finally {
+        setIsFiltering(false)
+        filterTimeoutRef.current = null
+      }
+    }, delay)
+
+    return () => {
+      if (filterTimeoutRef.current) {
+        clearTimeout(filterTimeoutRef.current)
+        filterTimeoutRef.current = null
+      }
+    }
+  }, [allCards, activeFilters, performFilter])
+
+  // 处理分组变化
+  useEffect(() => {
+    if (filteredCards.length > 0 && classificationResult) {
+      // 清除之前的定时器
+      if (filterTimeoutRef.current) {
+        clearTimeout(filterTimeoutRef.current)
+        filterTimeoutRef.current = null
+      }
+
+      setIsFiltering(true)
+
+      // 使用requestIdleCallback进行异步分组
+      const groupCards = () => {
+        try {
+          const newGrouped = groupCardsByCategory(filteredCards, selectedCategory)
+          setGroupedResults(newGrouped)
+        } catch (error) {
+          console.error('Error grouping cards:', error)
+        } finally {
+          setIsFiltering(false)
+        }
+      }
+
+      if (window.requestIdleCallback) {
+        window.requestIdleCallback(groupCards)
+      } else {
+        setTimeout(groupCards, 0)
+      }
+    }
+  }, [filteredCards, selectedCategory, classificationResult])
+
+  // 获取可用的筛选选项 - 使用缓存优化
   const availableOptions = useMemo(() => {
+    if (allCards.length === 0) return {}
+    
     const options: Record<string, string[]> = {}
     const dimensionMap: Record<string, keyof CardInfo> = {
-      'brand': 'CardBrand',
-      'type': 'Type',
-      'level': 'CardSegmentType',
-      'bank': 'BankName',
-      'country': 'CountryName',
-      'currency': 'IssuerCurrency'
+      'brand': 'cardBrand',
+      'type': 'type',
+      'level': 'cardSegmentType',
+      'bank': 'bankName',
+      'country': 'countryName',
+      'product': 'productName'
     }
     
     Object.entries(dimensionMap).forEach(([key, field]) => {
-      const uniqueValues = Array.from(new Set(allCards.map(card => card[field] as string)))
+      const uniqueValues = Array.from(new Set(
+        allCards
+          .map(card => card[field] as string)
+          .filter(value => value && value.toString().trim() !== '')
+      ))
       options[key] = uniqueValues.sort()
     })
     
@@ -196,7 +412,7 @@ export function useBinClassify() {
       level: "卡片等级",
       bank: "发卡行",
       country: "发卡国家",
-      currency: "国家货币"
+      product: "产品名称"
     }
     
     const newFilter: FilterOption = {
@@ -220,35 +436,44 @@ export function useBinClassify() {
     ))
   }, [])
 
-
-
-  // 当筛选条件或分类维度改变时自动重新分类
-  useEffect(() => {
-    if (allCards.length > 0 && classificationResult) {
-      const newGrouped = groupCardsByCategory(filteredCards, selectedCategory)
-      setGroupedResults(newGrouped)
-    }
-  }, [filteredCards, selectedCategory, allCards.length, classificationResult])
-
   // 停止处理
-  const stopProcessing = useCallback(() => {
+  const stopProcessing = useCallback(async () => {
     shouldStopProcessing.current = true
+    
+    // 如果有正在进行的查询，尝试取消它
+    if (currentQueryId) {
+      try {
+        await cancelBinClassifyQuery(currentQueryId)
+      } catch (error) {
+        console.error('Failed to cancel query:', error)
+      }
+    }
+    
     setIsProcessing(false)
     setProcessingStatus(prev => ({ ...prev, isProcessing: false }))
     setCurrentQueryId(null)
-  }, [])
+  }, [currentQueryId, cancelBinClassifyQuery])
 
   // 重置状态
   const resetState = useCallback(() => {
     shouldStopProcessing.current = false
+    
+    // 安全清理定时器
+    if (filterTimeoutRef.current) {
+      clearTimeout(filterTimeoutRef.current)
+      filterTimeoutRef.current = null
+    }
+    
     setCardInput("")
     setGroupedResults({})
     setExpandedGroups(new Set())
     setIsProcessing(false)
     setClassificationResult(null)
     setAllCards([])
+    setFilteredCards([])
     setActiveFilters([])
     setCurrentQueryId(null)
+    setIsFiltering(false)
     setProcessingStatus({
       isProcessing: false,
       processedCount: 0,
@@ -256,6 +481,18 @@ export function useBinClassify() {
       currentCard: "",
       progress: 0
     })
+  }, [])
+
+  // 组件卸载时的清理
+  useEffect(() => {
+    return () => {
+      // 清理所有定时器
+      if (filterTimeoutRef.current) {
+        clearTimeout(filterTimeoutRef.current)
+        filterTimeoutRef.current = null
+      }
+      shouldStopProcessing.current = true
+    }
   }, [])
 
   return {
@@ -274,6 +511,7 @@ export function useBinClassify() {
     activeFilters,
     availableOptions,
     filteredCards,
+    isFiltering,
     
     // 方法
     processCards,
@@ -287,152 +525,22 @@ export function useBinClassify() {
   }
 }
 
-// 生成卡片信息的辅助函数
-function generateCardInfo(cardData: string): CardInfo {
-  const [cardNumber] = cardData.split("|")
-  const bin = cardNumber.substring(0, 6)
-  
-  // 扩展的模拟BIN查询结果
-  const mockData: Record<string, { brand: string; type: string; level: string; bank: string; country: string; currency: string }> = {
-    // Visa卡片 - 美国
-    "400000": { brand: "Visa", type: "Credit", level: "Classic", bank: "Chase Bank", country: "US", currency: "USD" },
-    "411111": { brand: "Visa", type: "Credit", level: "Gold", bank: "Bank of America", country: "US", currency: "USD" },
-    "412345": { brand: "Visa", type: "Credit", level: "Platinum", bank: "Wells Fargo", country: "US", currency: "USD" },
-    "413456": { brand: "Visa", type: "Debit", level: "Standard", bank: "Citibank", country: "US", currency: "USD" },
-    "414567": { brand: "Visa", type: "Credit", level: "Signature", bank: "Capital One", country: "US", currency: "USD" },
-    
-    // Visa卡片 - 加拿大
-    "415678": { brand: "Visa", type: "Credit", level: "Infinite", bank: "TD Bank", country: "CA", currency: "CAD" },
-    "416789": { brand: "Visa", type: "Debit", level: "Classic", bank: "RBC", country: "CA", currency: "CAD" },
-    "417890": { brand: "Visa", type: "Credit", level: "Gold", bank: "Scotiabank", country: "CA", currency: "CAD" },
-    
-    // Visa卡片 - 英国
-    "418901": { brand: "Visa", type: "Credit", level: "Platinum", bank: "Barclays", country: "UK", currency: "GBP" },
-    "419012": { brand: "Visa", type: "Debit", level: "Standard", bank: "HSBC UK", country: "UK", currency: "GBP" },
-    "420123": { brand: "Visa", type: "Credit", level: "Gold", bank: "Lloyds Bank", country: "UK", currency: "GBP" },
-    
-    // Mastercard卡片 - 美国
-    "500000": { brand: "Mastercard", type: "Credit", level: "Standard", bank: "JPMorgan Chase", country: "US", currency: "USD" },
-    "511111": { brand: "Mastercard", type: "Credit", level: "Gold", bank: "Bank of America", country: "US", currency: "USD" },
-    "512345": { brand: "Mastercard", type: "Credit", level: "Platinum", bank: "Wells Fargo", country: "US", currency: "USD" },
-    "513456": { brand: "Mastercard", type: "Debit", level: "Standard", bank: "Citibank", country: "US", currency: "USD" },
-    "514567": { brand: "Mastercard", type: "Credit", level: "World", bank: "Capital One", country: "US", currency: "USD" },
-    
-    // Mastercard卡片 - 加拿大
-    "515678": { brand: "Mastercard", type: "Credit", level: "World Elite", bank: "BMO", country: "CA", currency: "CAD" },
-    "516789": { brand: "Mastercard", type: "Debit", level: "Standard", bank: "RBC", country: "CA", currency: "CAD" },
-    "517890": { brand: "Mastercard", type: "Credit", level: "Gold", bank: "TD Bank", country: "CA", currency: "CAD" },
-    
-    // Mastercard卡片 - 欧洲
-    "518901": { brand: "Mastercard", type: "Credit", level: "Platinum", bank: "Santander", country: "ES", currency: "EUR" },
-    "519012": { brand: "Mastercard", type: "Debit", level: "Standard", bank: "Deutsche Bank", country: "DE", currency: "EUR" },
-    "520123": { brand: "Mastercard", type: "Credit", level: "Gold", bank: "BNP Paribas", country: "FR", currency: "EUR" },
-    
-    // American Express卡片
-    "340000": { brand: "American Express", type: "Credit", level: "Green", bank: "American Express", country: "US", currency: "USD" },
-    "341111": { brand: "American Express", type: "Credit", level: "Gold", bank: "American Express", country: "US", currency: "USD" },
-    "342345": { brand: "American Express", type: "Credit", level: "Platinum", bank: "American Express", country: "US", currency: "USD" },
-    "343456": { brand: "American Express", type: "Credit", level: "Centurion", bank: "American Express", country: "US", currency: "USD" },
-    "344567": { brand: "American Express", type: "Credit", level: "Gold", bank: "American Express", country: "CA", currency: "CAD" },
-    "345678": { brand: "American Express", type: "Credit", level: "Platinum", bank: "American Express", country: "UK", currency: "GBP" },
-    
-    // Discover卡片
-    "601100": { brand: "Discover", type: "Credit", level: "Standard", bank: "Discover Bank", country: "US", currency: "USD" },
-    "601111": { brand: "Discover", type: "Credit", level: "Cash Back", bank: "Discover Bank", country: "US", currency: "USD" },
-    "601234": { brand: "Discover", type: "Credit", level: "Miles", bank: "Discover Bank", country: "US", currency: "USD" },
-    
-    // JCB卡片 - 日本
-    "352800": { brand: "JCB", type: "Credit", level: "Classic", bank: "JCB Bank", country: "JP", currency: "JPY" },
-    "353456": { brand: "JCB", type: "Credit", level: "Gold", bank: "JCB Bank", country: "JP", currency: "JPY" },
-    "354567": { brand: "JCB", type: "Credit", level: "Platinum", bank: "Mitsubishi UFJ", country: "JP", currency: "JPY" },
-    "355678": { brand: "JCB", type: "Debit", level: "Standard", bank: "Sumitomo Mitsui", country: "JP", currency: "JPY" },
-    
-    // UnionPay卡片 - 中国
-    "620000": { brand: "UnionPay", type: "Credit", level: "Standard", bank: "ICBC", country: "CN", currency: "CNY" },
-    "621111": { brand: "UnionPay", type: "Debit", level: "Standard", bank: "Bank of China", country: "CN", currency: "CNY" },
-    "622345": { brand: "UnionPay", type: "Credit", level: "Gold", bank: "China Construction Bank", country: "CN", currency: "CNY" },
-    "623456": { brand: "UnionPay", type: "Credit", level: "Platinum", bank: "Agricultural Bank of China", country: "CN", currency: "CNY" },
-    "624567": { brand: "UnionPay", type: "Debit", level: "Standard", bank: "China Merchants Bank", country: "CN", currency: "CNY" },
-    
-    // 澳大利亚银行卡
-    "428000": { brand: "Visa", type: "Credit", level: "Gold", bank: "Commonwealth Bank", country: "AU", currency: "AUD" },
-    "429111": { brand: "Visa", type: "Debit", level: "Standard", bank: "ANZ Bank", country: "AU", currency: "AUD" },
-    "528000": { brand: "Mastercard", type: "Credit", level: "Platinum", bank: "Westpac", country: "AU", currency: "AUD" },
-    "529111": { brand: "Mastercard", type: "Debit", level: "Standard", bank: "NAB", country: "AU", currency: "AUD" },
-    
-    // 新加坡银行卡
-    "435000": { brand: "Visa", type: "Credit", level: "Signature", bank: "DBS Bank", country: "SG", currency: "SGD" },
-    "436111": { brand: "Visa", type: "Debit", level: "Standard", bank: "OCBC Bank", country: "SG", currency: "SGD" },
-    "535000": { brand: "Mastercard", type: "Credit", level: "World", bank: "UOB", country: "SG", currency: "SGD" },
-    
-    // 印度银行卡
-    "440000": { brand: "Visa", type: "Credit", level: "Gold", bank: "State Bank of India", country: "IN", currency: "INR" },
-    "441111": { brand: "Visa", type: "Debit", level: "Standard", bank: "HDFC Bank", country: "IN", currency: "INR" },
-    "540000": { brand: "Mastercard", type: "Credit", level: "Platinum", bank: "ICICI Bank", country: "IN", currency: "INR" },
-    "541111": { brand: "Mastercard", type: "Debit", level: "Standard", bank: "Axis Bank", country: "IN", currency: "INR" },
-    
-    // 巴西银行卡
-    "460000": { brand: "Visa", type: "Credit", level: "Gold", bank: "Banco do Brasil", country: "BR", currency: "BRL" },
-    "461111": { brand: "Visa", type: "Debit", level: "Standard", bank: "Itaú", country: "BR", currency: "BRL" },
-    "560000": { brand: "Mastercard", type: "Credit", level: "Platinum", bank: "Bradesco", country: "BR", currency: "BRL" },
-    "561111": { brand: "Mastercard", type: "Debit", level: "Standard", bank: "Santander Brasil", country: "BR", currency: "BRL" }
-  }
-  
-  // 如果找不到匹配的BIN，生成随机的模拟数据
-  const data = mockData[bin] || generateRandomCardInfo(bin)
-  
-  return {
-    cardNumber,
-    brand: data.brand,
-    type: data.type,
-    level: data.level,
-    bank: data.bank,
-    country: data.country,
-    currency: data.currency
-  }
-}
 
-// 生成随机卡片信息的辅助函数
-function generateRandomCardInfo(bin: string) {
-  const brands = ["Visa", "Mastercard", "American Express", "Discover", "JCB", "UnionPay"]
-  const types = ["Credit", "Debit"]
-  const levels = ["Standard", "Classic", "Gold", "Platinum", "Signature", "World", "World Elite"]
-  const banks = [
-    "Chase Bank", "Bank of America", "Wells Fargo", "Citibank", "Capital One",
-    "TD Bank", "RBC", "Scotiabank", "BMO", "HSBC", "Barclays", "Lloyds Bank",
-    "Deutsche Bank", "BNP Paribas", "Santander", "ING Bank", "Commonwealth Bank",
-    "ANZ Bank", "Westpac", "NAB", "DBS Bank", "OCBC Bank", "UOB"
-  ]
-  const countries = ["US", "CA", "UK", "DE", "FR", "ES", "AU", "SG", "JP", "CN", "IN", "BR"]
-  const currencies = ["USD", "CAD", "GBP", "EUR", "AUD", "SGD", "JPY", "CNY", "INR", "BRL"]
-  
-  // 使用BIN作为种子来确保相同BIN总是生成相同的结果
-  const seed = parseInt(bin) % 1000
-  
-  return {
-    brand: brands[seed % brands.length],
-    type: types[seed % types.length],
-    level: levels[seed % levels.length],
-    bank: banks[seed % banks.length],
-    country: countries[seed % countries.length],
-    currency: currencies[seed % currencies.length]
-  }
-}
 
 // 按分类分组卡片
 function groupCardsByCategory(cards: CardInfo[], category: string): GroupedResult {
   const grouped: GroupedResult = {}
   
   const dimensionMap: Record<string, keyof CardInfo> = {
-    'brand': 'CardBrand',
-    'type': 'Type',
-    'level': 'CardSegmentType',
-    'bank': 'BankName',
-    'country': 'CountryName',
-    'currency': 'IssuerCurrency'
+    'brand': 'cardBrand',
+    'type': 'type',
+    'level': 'cardSegmentType',
+    'bank': 'bankName',
+    'country': 'countryName',
+    'product': 'productName'
   }
   
-  const field = dimensionMap[category] || 'CountryName'
+  const field = dimensionMap[category] || 'countryName'
   
   cards.forEach(card => {
     const key = card[field] as string

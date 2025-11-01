@@ -7,7 +7,6 @@ interface User {
   email: string
   username: string // Added username field
   name: string
-  avatar?: string
   avatarSeed?: string // DiceBear avatar seed
   avatarStyle?: string // DiceBear avatar style
   mCoins: number
@@ -34,22 +33,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setToken] = useState<string | null>(null) // 添加token状态
   const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    const savedUser = localStorage.getItem("user")
-    const savedToken = localStorage.getItem("token") // 从localStorage获取token
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser))
-      } catch (error) {
-        console.error("Failed to parse saved user:", error)
-        localStorage.removeItem("user")
-      }
-    }
-    if (savedToken) {
-      setToken(savedToken) // 设置token
-    }
-    setIsLoading(false)
-  }, [])
+  // 移除重复的初始化逻辑，统一在下面的initializeAuth中处理
 
   useEffect(() => {
     if (user) {
@@ -175,27 +159,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // 初始化用户状态
   useEffect(() => {
     const initializeAuth = async () => {
+      console.log("🔄 开始初始化认证状态...")
       const storedToken = localStorage.getItem("token")
       const storedUser = localStorage.getItem("user")
       
       if (storedToken && !isTokenExpired()) {
+        console.log("✅ 发现有效token，设置认证状态...")
         setToken(storedToken)
         
         // 如果有缓存的用户信息，先使用缓存
         if (storedUser) {
           try {
             setUser(JSON.parse(storedUser))
+            console.log("📋 已加载缓存的用户信息")
           } catch (error) {
             console.error("解析用户信息失败:", error)
           }
         }
         
         // 然后获取最新的用户信息
+        console.log("📡 向后端请求最新用户信息...")
         const userInfo = await fetchUserInfo(storedToken)
         if (userInfo) {
+          console.log("✅ 成功获取用户信息:", userInfo)
           setUser(userInfo)
           localStorage.setItem("user", JSON.stringify(userInfo))
         } else {
+          console.log("❌ 获取用户信息失败，清除token")
           // 如果获取用户信息失败，清除token
           localStorage.removeItem("token")
           localStorage.removeItem("tokenExpiration")
@@ -204,13 +194,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(null)
         }
       } else if (storedToken && isTokenExpired()) {
+        console.log("⏰ Token已过期，清除所有存储")
         // Token过期，清除所有存储
         localStorage.removeItem("token")
         localStorage.removeItem("tokenExpiration")
         localStorage.removeItem("user")
         setToken(null)
         setUser(null)
+      } else {
+        console.log("❌ 未发现有效token")
       }
+      
+      console.log("✅ 认证状态初始化完成")
+      setIsLoading(false)
     }
 
     initializeAuth()

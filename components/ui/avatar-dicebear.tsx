@@ -1,7 +1,7 @@
 "use client"
 
+import React, { useMemo } from "react"
 import { cn } from "@/lib/utils"
-import { useState } from "react"
 
 // DiceBear 头像风格配置
 export const DICEBEAR_STYLES = {
@@ -44,7 +44,7 @@ export const AVATAR_CATEGORIES = {
   "复古": { color: "from-amber-500 to-yellow-600", icon: "👾" },
 }
 
-// 预设种子值，确保头像的一致性
+// 预设种子值
 export const AVATAR_SEEDS = [
   "Felix", "Aneka", "Trouble", "Zoey", "Tigger", "Sammy", "Sassy", "Shadow",
   "Smokey", "Clementine", "Kitty", "Chester", "Mittens", "Misty", "Oscar", 
@@ -61,6 +61,7 @@ interface DiceBearAvatarProps {
   className?: string
   showBorder?: boolean
   animated?: boolean
+  showTitle?: boolean
 }
 
 export function DiceBearAvatar({ 
@@ -69,12 +70,21 @@ export function DiceBearAvatar({
   size = 100,
   className,
   showBorder = true,
-  animated = true
+  animated = true,
+  showTitle = true
 }: DiceBearAvatarProps) {
-  const avatarUrl = `https://api.dicebear.com/7.x/${style}/svg?seed=${encodeURIComponent(seed)}&size=${size}`
-  
   const styleInfo = DICEBEAR_STYLES[style]
   const categoryInfo = AVATAR_CATEGORIES[styleInfo.category as keyof typeof AVATAR_CATEGORIES]
+
+  // 生成头像URL
+  const avatarUrl = useMemo(() => {
+    const baseUrl = `https://api.dicebear.com/7.x/${style}/svg`
+    const params = new URLSearchParams({
+      seed: seed,
+      size: size.toString(),
+    })
+    return `${baseUrl}?${params.toString()}`
+  }, [style, seed, size])
 
   return (
     <div 
@@ -85,7 +95,7 @@ export function DiceBearAvatar({
         className
       )}
       style={{ width: size, height: size }}
-      title={`${styleInfo.name} - ${seed}`}
+      title={showTitle ? `${styleInfo.name} - ${seed}` : undefined}
     >
       {/* 背景渐变 */}
       {showBorder && (
@@ -111,16 +121,20 @@ export function DiceBearAvatar({
           const fallback = target.nextElementSibling as HTMLElement;
           if (fallback) fallback.style.display = 'flex';
         }}
+        crossOrigin="anonymous"
+        referrerPolicy="no-referrer"
+        loading="lazy"
+        decoding="async"
       />
       
       {/* 备用方案 */}
       <div 
         className={cn(
-          "hidden w-full h-full items-center justify-center bg-gradient-to-br text-white font-bold text-2xl rounded-full",
+          "hidden w-full h-full items-center justify-center bg-gradient-to-br text-white font-bold rounded-full relative z-10",
           categoryInfo.color
         )}
       >
-        {categoryInfo.icon}
+        <span style={{ fontSize: size * 0.3 }}>{categoryInfo.icon}</span>
       </div>
       
       {/* 3D高光效果 */}
@@ -151,8 +165,8 @@ export function DiceBearSelector({
   showCategories = true,
   showStyles = true
 }: DiceBearSelectorProps) {
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null)
-  const [currentStyle, setCurrentStyle] = useState<keyof typeof DICEBEAR_STYLES>(selectedStyle)
+  const [selectedCategory, setSelectedCategory] = React.useState<string | null>(null)
+  const [currentStyle, setCurrentStyle] = React.useState<keyof typeof DICEBEAR_STYLES>(selectedStyle)
   
   const filteredStyles = selectedCategory 
     ? Object.entries(DICEBEAR_STYLES).filter(([_, info]) => info.category === selectedCategory)

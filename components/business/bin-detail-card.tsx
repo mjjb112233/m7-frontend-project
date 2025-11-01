@@ -9,11 +9,9 @@ import {
   CreditCard, 
   Building, 
   Globe, 
-  Shield, 
-  Banknote,
   CheckCircle,
   XCircle,
-  AlertTriangle,
+  Shield,
   Info
 } from "lucide-react"
 import type { DetailedBINQueryResult } from "@/lib/api/bin-query"
@@ -24,19 +22,19 @@ interface BINDetailCardProps {
 }
 
 export function BINDetailCard({ data, className = "" }: BINDetailCardProps) {
-  // 获取状态图标和颜色
-  const getBooleanDisplay = (value: boolean, label: string) => ({
-    icon: value ? CheckCircle : XCircle,
-    color: value ? "text-green-600" : "text-red-600",
-    bgColor: value ? "bg-green-50" : "bg-red-50",
-    label: value ? "是" : "否"
-  })
-
   const cardTypeColor = {
     'Credit': 'bg-blue-100 text-blue-800',
     'Debit': 'bg-green-100 text-green-800',
     'Prepaid': 'bg-purple-100 text-purple-800'
   }
+  
+  // 获取认证状态显示
+  const getAuthDisplay = (required: boolean) => ({
+    icon: required ? CheckCircle : XCircle,
+    color: required ? "text-green-600" : "text-red-600",
+    bgColor: required ? "bg-green-50" : "bg-red-50",
+    label: required ? "需要认证" : "无需认证"
+  })
 
   return (
     <div className={`space-y-6 ${className}`}>
@@ -86,16 +84,6 @@ export function BINDetailCard({ data, className = "" }: BINDetailCardProps) {
             </div>
 
             <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center shadow-lg">
-                <Banknote className="h-4 w-4 text-white" />
-              </div>
-              <div>
-                <div className="text-sm text-gray-600">资金来源</div>
-                <div className="font-medium text-gray-900">{data.funding_source}</div>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-gradient-to-br from-pink-500 to-rose-500 rounded-lg flex items-center justify-center shadow-lg">
                 <span className="text-white text-xs font-bold">#</span>
               </div>
@@ -105,15 +93,17 @@ export function BINDetailCard({ data, className = "" }: BINDetailCardProps) {
               </div>
             </div>
 
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center shadow-lg">
-                <span className="text-white text-xs font-bold">S</span>
+            {data.card_segment_type && (
+              <div className="flex items-center space-x-3">
+                <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center shadow-lg">
+                  <span className="text-white text-xs font-bold">S</span>
+                </div>
+                <div>
+                  <div className="text-sm text-gray-600">卡段类型</div>
+                  <div className="font-medium text-gray-900">{data.card_segment_type}</div>
+                </div>
               </div>
-              <div>
-                <div className="text-sm text-gray-600">卡段类型</div>
-                <div className="font-medium text-gray-900">{data.card_segment_type}</div>
-              </div>
-            </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -130,7 +120,7 @@ export function BINDetailCard({ data, className = "" }: BINDetailCardProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="relative p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center shadow-lg">
                 <Building className="h-4 w-4 text-white" />
@@ -138,26 +128,6 @@ export function BINDetailCard({ data, className = "" }: BINDetailCardProps) {
               <div>
                 <div className="text-sm text-gray-600">银行名称</div>
                 <div className="font-medium text-gray-900">{data.bank_name}</div>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-teal-500 to-cyan-500 rounded-lg flex items-center justify-center shadow-lg">
-                <Building className="h-4 w-4 text-white" />
-              </div>
-              <div>
-                <div className="text-sm text-gray-600">银行清洁名称</div>
-                <div className="font-medium text-gray-900">{data.bank_clean_name}</div>
-              </div>
-            </div>
-
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-violet-500 rounded-lg flex items-center justify-center shadow-lg">
-                <span className="text-white text-xs font-bold">¤</span>
-              </div>
-              <div>
-                <div className="text-sm text-gray-600">发行货币</div>
-                <div className="font-medium text-gray-900">{data.issuer_currency}</div>
               </div>
             </div>
 
@@ -188,7 +158,7 @@ export function BINDetailCard({ data, className = "" }: BINDetailCardProps) {
           </CardTitle>
         </CardHeader>
         <CardContent className="relative p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6">
             <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg flex items-center justify-center shadow-lg">
                 <span className="text-white text-xs font-bold">P</span>
@@ -198,58 +168,52 @@ export function BINDetailCard({ data, className = "" }: BINDetailCardProps) {
                 <div className="font-medium text-gray-900">{data.product_name}</div>
               </div>
             </div>
-
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center shadow-lg">
-                <Shield className="h-4 w-4 text-white" />
-              </div>
-              <div>
-                <div className="text-sm text-gray-600">认证名称</div>
-                <div className="font-medium text-gray-900">{data.authentication_name}</div>
-              </div>
-            </div>
           </div>
         </CardContent>
       </Card>
-
-      {/* 功能特性卡片 */}
+      
+      {/* 认证信息卡片 */}
       <Card className="relative overflow-hidden border-0 shadow-xl">
         <div className="absolute inset-0 bg-gradient-to-br from-orange-50 to-red-50 opacity-60"></div>
         <CardHeader className="relative bg-gradient-to-r from-orange-600/10 to-red-600/10">
           <CardTitle className="text-lg font-bold text-gray-900 flex items-center gap-2">
             <div className="w-6 h-6 bg-gradient-to-br from-orange-500 to-red-500 rounded-lg flex items-center justify-center shadow-lg">
-              <AlertTriangle className="h-4 w-4 text-white" />
+              <Shield className="h-4 w-4 text-white" />
             </div>
-            功能特性
+            认证信息
           </CardTitle>
         </CardHeader>
         <CardContent className="relative p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-            {[
-              { key: 'prepaid', label: '预付费卡', value: data.prepaid },
-              { key: 'auth_required', label: '需要认证', value: data.auth_required },
-              { key: 'domestic_only', label: '仅限国内', value: data.domestic_only },
-              { key: 'gambling_blocked', label: '阻止赌博', value: data.gambling_blocked },
-              { key: 'reloadable', label: '可重载', value: data.reloadable },
-              { key: 'account_updater', label: '账户更新器', value: data.account_updater },
-              { key: 'level2', label: 'Level2功能', value: data.level2 },
-              { key: 'level3', label: 'Level3功能', value: data.level3 },
-              { key: 'alm', label: 'ALM功能', value: data.alm },
-              { key: 'shared_bin', label: '共享BIN', value: data.shared_bin }
-            ].map(({ key, label, value }) => {
-              const display = getBooleanDisplay(value, label)
-              const Icon = display.icon
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {(() => {
+              const authDisplay = getAuthDisplay(data.authentication_required)
+              const AuthIcon = authDisplay.icon
               
               return (
-                <div key={key} className={`flex items-center space-x-3 p-3 rounded-lg ${display.bgColor}`}>
-                  <Icon className={`h-5 w-5 ${display.color}`} />
-                  <div>
-                    <div className="text-sm font-medium text-gray-900">{label}</div>
-                    <div className={`text-sm font-semibold ${display.color}`}>{display.label}</div>
+                <>
+                  <div className={`flex items-center space-x-3 p-3 rounded-lg ${authDisplay.bgColor}`}>
+                    <AuthIcon className={`h-5 w-5 ${authDisplay.color}`} />
+                    <div>
+                      <div className="text-sm text-gray-600">认证状态</div>
+                      <div className={`text-sm font-semibold ${authDisplay.color}`}>{authDisplay.label}</div>
+                    </div>
                   </div>
-                </div>
+                  
+                  {data.authentication_required && data.authentication_name && (
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center shadow-lg">
+                        <Shield className="h-4 w-4 text-white" />
+                      </div>
+                      <div>
+                        <div className="text-sm text-gray-600">认证名称</div>
+                        <div className="font-medium text-gray-900">{data.authentication_name}</div>
+                      </div>
+                    </div>
+                  )}
+                </>
               )
-            })}
+            })()
+            }
           </div>
         </CardContent>
       </Card>

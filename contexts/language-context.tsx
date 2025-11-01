@@ -214,8 +214,7 @@ const translations = {
     "binQuery.title": "BIN查询系统",
     "binQuery.description": "输入银行卡BIN码查询详细的卡片信息",
     "binQuery.queryTab": "BIN查询",
-    "binQuery.historyTab": "查询历史",
-    "binQuery.historyTitle": "查询历史记录",
+
     "binQuery.refreshing": "刷新中...",
     "binQuery.refresh": "刷新",
     "binQuery.pageInfo": "第",
@@ -512,8 +511,7 @@ const translations = {
     "binQuery.title": "BIN Query System",
     "binQuery.description": "Enter bank card BIN code to query detailed card information",
     "binQuery.queryTab": "BIN Query",
-    "binQuery.historyTab": "Query History",
-    "binQuery.historyTitle": "Query History Records",
+
     "binQuery.refreshing": "Refreshing...",
     "binQuery.refresh": "Refresh",
     "binQuery.pageInfo": "Page",

@@ -74,7 +74,7 @@ export async function getAnnouncements(): Promise<Announcement[]> {
 
   try {
     console.log('[公告] 首次请求公告数据')
-    const response = await get<Announcement[]>('/announcements')
+    const response = await get<Announcement[]>('/announcements/')
     
     if (response.success && response.data) {
       // 缓存数据并标记已请求

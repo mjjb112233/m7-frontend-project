@@ -19,39 +19,18 @@ export function parseCardData(cardData: string): CardInfo | null {
       return null
     }
 
-    // 生成BIN信息（这里使用模拟数据）
-    const bin = cardNumber.substring(0, 6)
-    const mockData = getMockBinData(bin)
-    
+    // 返回基础卡片信息，BIN信息将通过API获取
     return {
       cardNumber,
-      brand: mockData.brand,
-      type: mockData.type,
-      level: mockData.level,
-      bank: mockData.bank,
-      country: mockData.country,
-      currency: mockData.currency
+      brand: "Unknown", // 将通过BIN查询API获取
+      type: "Unknown",  // 将通过BIN查询API获取
+      level: "Unknown", // 将通过BIN查询API获取
+      bank: "Unknown",  // 将通过BIN查询API获取
+      country: "Unknown", // 将通过BIN查询API获取
+      currency: "Unknown" // 将通过BIN查询API获取
     }
   } catch (error) {
     console.error("解析卡片数据失败:", error)
     return null
-  }
-}
-
-function getMockBinData(bin: string) {
-  const mockData = {
-    "400000": { brand: "Visa", type: "Credit", level: "Classic", bank: "Test Bank", country: "US", currency: "USD" },
-    "500000": { brand: "Mastercard", type: "Credit", level: "Gold", bank: "Test Bank", country: "CA", currency: "CAD" },
-    "300000": { brand: "American Express", type: "Credit", level: "Platinum", bank: "Test Bank", country: "US", currency: "USD" },
-    "600000": { brand: "Discover", type: "Credit", level: "Standard", bank: "Test Bank", country: "US", currency: "USD" }
-  }
-  
-  return mockData[bin as keyof typeof mockData] || {
-    brand: "Unknown",
-    type: "Credit",
-    level: "Standard",
-    bank: "Unknown Bank",
-    country: "Unknown",
-    currency: "USD"
   }
 }

@@ -16,7 +16,7 @@ export const API_ENDPOINTS = {
     USER: '/auth/user',
   },
   // 公告相关
-  ANNOUNCEMENTS: '/announcements',
+  ANNOUNCEMENTS: '/announcements/',
   // CVV检测相关
   CVV_CHECK: {
     CONFIG: '/cvv-check/config',
@@ -32,11 +32,11 @@ export const API_ENDPOINTS = {
   BIN_CLASSIFY: {
     QUERY: '/bin-classify/query',
     RESULTS: '/bin-classify/results',
+    CANCEL: '/bin-classify/cancel',
   },
   // BIN查询相关
   BIN_QUERY: {
     QUERY: '/bin-query/query',
-    HISTORY: '/bin-query/history',
   },
 
   // 充值相关

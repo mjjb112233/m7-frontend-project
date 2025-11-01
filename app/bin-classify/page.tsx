@@ -6,7 +6,7 @@ import { CreditCard } from "lucide-react"
 import Header from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { useBinClassify } from "./hooks/useBinClassify"
-import { CardInput, GroupedResults, QueryProgress, MultiDimensionFilter, DataSourceInfo, Toast } from "./components"
+import { CardInput, GroupedResults, QueryProgress, MultiDimensionFilter, DataSourceInfo, Toast, LoadingOverlay } from "./components"
 
 export default function BinClassifyPage() {
   return (
@@ -48,7 +48,8 @@ function BinClassifyContent() {
     // 筛选状态
     activeFilters,
     availableOptions,
-    filteredCards
+    filteredCards,
+    isFiltering
   } = useBinClassify()
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
@@ -115,7 +116,7 @@ function BinClassifyContent() {
     Object.entries(groupedResults).forEach(([groupName, cards]) => {
       exportText += `${groupName}:\n`
       cards.forEach((card) => {
-        exportText += `${card.CardNumber} | ${card.CardBrand} | ${card.Type} | ${card.CardSegmentType} | ${card.BankName} | ${card.CountryName} | ${card.IssuerCurrency}\n`
+        exportText += `${card.cardNumber} | ${card.cardBrand} | ${card.type} | ${card.cardSegmentType} | ${card.bankName} | ${card.countryName} | ${card.productName}\n`
       })
       exportText += "\n"
     })
@@ -137,7 +138,7 @@ function BinClassifyContent() {
       level: "卡片等级",
       bank: "发卡行",
       country: "发卡国家",
-      currency: "国家货币",
+      product: "产品名称",
     }
     return labels[category] || category
   }
@@ -210,7 +211,7 @@ function BinClassifyContent() {
             onToggleGroup={toggleGroup}
             onCopyCard={copyCardNumber}
             onCopyGroup={async (cards) => {
-              const groupData = cards.map((card) => card.CardNumber).join("\n")
+              const groupData = cards.map((card) => card.cardNumber).join("\n")
               try {
                 await navigator.clipboard.writeText(groupData)
                 showToast(`已复制 ${cards.length} 张卡号到剪贴板`)
@@ -234,6 +235,7 @@ function BinClassifyContent() {
             onExportData={exportData}
             selectedCategory={selectedCategory}
             getCategoryLabel={getCategoryLabel}
+            isFiltering={isFiltering}
           />
         </div>
       </div>
@@ -245,6 +247,11 @@ function BinClassifyContent() {
         type={toastType}
         isVisible={toastVisible}
         onClose={() => setToastVisible(false)}
+      />
+      
+      <LoadingOverlay 
+        isVisible={isFiltering && !isProcessing}
+        message="筛选数据中..."
       />
     </div>
   )

@@ -50,7 +50,7 @@ export function MultiDimensionFilter({
     { key: "level", label: "卡片等级" },
     { key: "bank", label: "发卡行" },
     { key: "country", label: "发卡国家" },
-    { key: "currency", label: "国家货币" }
+    { key: "product", label: "产品名称" }
   ]
 
   const availableDimensions = dimensions.filter(
@@ -148,7 +148,7 @@ export function MultiDimensionFilter({
               <SelectItem value="level">卡片等级</SelectItem>
               <SelectItem value="bank">发卡行</SelectItem>
               <SelectItem value="country">发卡国家</SelectItem>
-              <SelectItem value="currency">国家货币</SelectItem>
+              <SelectItem value="product">产品名称</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -192,7 +192,7 @@ export function MultiDimensionFilter({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">全部</SelectItem>
-                      {availableOptions[filter.key]?.map(option => (
+                      {availableOptions[filter.key]?.filter(option => option && option.trim() !== '').map(option => (
                         <SelectItem key={option} value={option}>
                           {option}
                         </SelectItem>

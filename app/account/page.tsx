@@ -46,7 +46,7 @@ import { useLanguage } from "@/contexts/language-context"
 import { useSearchParams } from "next/navigation"
 import { useEffect } from "react"
 
-// TODO: 移除模拟数据，使用真实的用户记录数据
+
 
 export default function AccountPage() {
   const { user } = useAuth()
@@ -193,7 +193,7 @@ export default function AccountPage() {
                           </Button>
                           <Button 
                             onClick={() => {
-                              // TODO(stagewise): 这里需要调用API保存头像信息到后端
+                              // 这里需要调用API保存头像信息到后端
                               console.log('保存头像:', { seed: selectedAvatarSeed, style: selectedAvatarStyle })
                               setShowAvatarSelector(false)
                               setShowSuccessDialog(true)

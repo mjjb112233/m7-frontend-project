@@ -1,15 +1,18 @@
 // BIN分类页面相关类型定义
 
 export interface CardInfo {
-  CardNumber: string
-  CardBrand: string
-  Type: string
-  CountryName: string
-  CardSegmentType: string
-  IssuerCurrency: string
-  BankName: string
-  AuthRequired: boolean
-  AuthenticationName: string
+  cardNumber: string
+  binLength: number
+  numberLength: number
+  cardBrand: string
+  type: string
+  cardSegmentType: string
+  bankName: string
+  countryAlpha2: string
+  countryNumeric: string
+  countryName: string
+  productName: string
+  createdAt: string
 }
 
 // API请求和响应类型
@@ -21,7 +24,7 @@ export interface BinClassifyQueryResponse {
   success: boolean
   data: {
     queryId: string
-    status: 'processing' | 'completed' | 'failed'
+    status: 'processing'
   }
   message: string
 }
@@ -30,11 +33,28 @@ export interface BinClassifyResultResponse {
   success: boolean
   data: {
     queryId: string
-    status: 'processing' | 'completed' | 'failed'
-    totalCount?: number
+    status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
+    totalCount: number
     processedCount?: number
+    pendingCount?: number
+    failedCount?: number
     results?: CardInfo[]
+    failedResults?: {
+      cardNumber: string
+      error: string
+    }[]
+    createdAt: string
+    updatedAt: string
   }
+  message: string
+}
+
+export interface BinClassifyCancelResponse {
+  success: boolean
+  data: {
+    queryId: string
+    status: 'cancelled'
+  } | null
   message: string
 }
 
@@ -58,7 +78,7 @@ export interface ClassificationResult {
 }
 
 export interface BinClassifyConfig {
-  selectedCategory: "country" | "bank" | "type" | "level" | "currency"
+  selectedCategory: "country" | "bank" | "type" | "level" | "brand" | "product"
   groupBy: string
   sortOrder: "asc" | "desc"
 }

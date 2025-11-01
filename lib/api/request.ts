@@ -16,6 +16,7 @@ export interface RequestConfig {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
   headers?: Record<string, string>
   body?: any
+  timeout?: number // 自定义超时时间（毫秒）
 }
 
 import { getApiBaseUrl, getApiConfig } from '@/lib/config'
@@ -49,20 +50,26 @@ export async function apiRequest<T = any>(
       requestConfig.body = typeof body === 'string' ? body : JSON.stringify(body)
     }
 
-    // 添加超时处理
+    // 添加超时处理，优先使用自定义超时时间
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), apiConfig.timeout)
+    const timeoutMs = config.timeout || apiConfig.timeout
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
     
     requestConfig.signal = controller.signal
 
     const response = await fetch(url, requestConfig)
     clearTimeout(timeoutId)
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
     const data = await response.json()
+    
+    if (!response.ok) {
+      // HTTP错误时，尝试从响应体中提取错误信息
+      if (data && data.message) {
+        throw new Error(data.message)
+      } else {
+        throw new Error(`网络错误，请检查网络连接后重试`)
+      }
+    }
     
     console.log(`[API] 响应:`, data)
     

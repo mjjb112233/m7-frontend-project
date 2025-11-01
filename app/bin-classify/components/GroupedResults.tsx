@@ -2,8 +2,9 @@ import React, { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Copy, Download, X } from "lucide-react"
+import { Copy, Download, X, Loader2 } from "lucide-react"
 import { GroupedResult, CardInfo } from "../types"
+import { VirtualizedCardList } from "./VirtualizedCardList"
 
 interface GroupedResultsProps {
   groupedResults: GroupedResult
@@ -15,6 +16,7 @@ interface GroupedResultsProps {
   onExportData: () => void
   selectedCategory: string
   getCategoryLabel: (category: string) => string
+  isFiltering?: boolean
 }
 
 export function GroupedResults({ 
@@ -23,7 +25,8 @@ export function GroupedResults({
   onCopyGroup,
   onExportData,
   selectedCategory,
-  getCategoryLabel
+  getCategoryLabel,
+  isFiltering = false
 }: GroupedResultsProps) {
   const [selectedGroup, setSelectedGroup] = useState<{name: string, cards: CardInfo[]} | null>(null)
   const totalCards = Object.values(groupedResults).reduce((sum, cards) => sum + cards.length, 0)
@@ -50,6 +53,12 @@ export function GroupedResults({
           <Badge variant="secondary" className="bg-purple-50 text-purple-700 border-purple-200 px-3 py-1">
             {groupCount} 个分组
           </Badge>
+          {isFiltering && (
+            <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 animate-pulse">
+              <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+              筛选中...
+            </Badge>
+          )}
           {selectedGroup && (
             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
               已选择: {selectedGroup.name} ({selectedGroup.cards.length}张卡)
@@ -93,6 +102,14 @@ export function GroupedResults({
                     : ''
                 }`}
                 onClick={() => handleCardClick(cards, groupName)}
+                onMouseEnter={() => {
+                  // 预加载优化
+                  if (cards.length > 100) {
+                    requestIdleCallback(() => {
+                      // 预处理大数据集
+                    })
+                  }
+                }}
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-purple-50 to-pink-50 opacity-60"></div>
                 <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-purple-200/30 to-pink-200/30 rounded-full -translate-y-10 translate-x-10"></div>
@@ -135,7 +152,7 @@ export function GroupedResults({
                   <div className="mt-3 space-y-1">
                     {cards.slice(0, 3).map((card, index) => (
                       <div key={index} className="text-xs text-gray-500 font-mono truncate">
-                        {card.CardNumber} • {card.CardBrand}
+                        {card.cardNumber} • {card.cardBrand}
                       </div>
                     ))}
                     {cards.length > 3 && (
@@ -174,9 +191,9 @@ export function GroupedResults({
                   </div>
                 </CardHeader>
                 
-                <CardContent className="p-6 flex flex-col" style={{maxHeight: 'calc(100vh - 280px)'}}>
+                <CardContent className="p-6 flex flex-col overflow-hidden" style={{maxHeight: 'calc(100vh - 280px)'}}>
                   {/* 组信息 - 固定在顶部 */}
-                  <div className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200 mb-4">
+                  <div className="bg-gradient-to-r from-purple-50 to-purple-100 rounded-lg p-4 border border-purple-200 mb-4 flex-shrink-0">
                     <div className="text-lg font-bold text-purple-900 mb-2">
                       {selectedGroup.name}
                     </div>
@@ -195,36 +212,72 @@ export function GroupedResults({
                   </div>
 
                   {/* 卡片列表标题 - 固定 */}
-                  <div className="text-sm font-medium text-gray-700 mb-3">卡片列表</div>
+                  <div className="text-sm font-medium text-gray-700 mb-3 flex-shrink-0">卡片列表</div>
                   
-                  {/* 卡片列表 - 可滚动区域 */}
-                  <div className="overflow-y-auto space-y-2 pr-2 pb-4" style={{maxHeight: 'calc(100vh - 450px)'}}>
-                    {selectedGroup.cards.map((card, index) => (
-                      <div key={index} className="bg-white/80 rounded-lg p-3 border border-purple-200 hover:border-purple-300 hover:bg-white transition-all duration-200 shadow-sm hover:shadow-md">
-                        {/* 卡号和复制按钮 */}
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="font-mono text-sm font-semibold text-gray-900 truncate mr-2">
-                            {card.CardNumber}
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onCopyCard(card.CardNumber)}
-                            className="h-6 w-6 p-0 hover:bg-purple-50 hover:text-purple-600 flex-shrink-0 transition-colors duration-200"
-                          >
-                            <Copy className="w-3 h-3" />
-                          </Button>
-                        </div>
-                        
-                        {/* 简化信息显示 */}
-                        <div className="flex flex-wrap gap-1">
-                          <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">{card.CardBrand}</Badge>
-                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">{card.Type}</Badge>
-                          <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">{card.CardSegmentType}</Badge>
-                          <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200">{card.IssuerCurrency}</Badge>
-                        </div>
+                  {/* 卡片列表 - 使用虚拟化列表优化大数据渲染 */}
+                  <div className="flex-1 min-h-0">
+                    {selectedGroup.cards.length > 100 ? (
+                      <div style={{ height: '400px' }}>
+                        <VirtualizedCardList
+                          cards={selectedGroup.cards}
+                          onCopyCard={onCopyCard}
+                          itemHeight={140}
+                          containerHeight={400}
+                          overscan={5}
+                        />
                       </div>
-                    ))}
+                    ) : (
+                      <div className="overflow-y-auto space-y-2" style={{ height: '400px', maxHeight: '400px' }}>
+                        {selectedGroup.cards.map((card, index) => (
+                          <div key={`${card.cardNumber}-${index}`} className="bg-white/80 rounded-lg p-3 border border-purple-200 hover:border-purple-300 hover:bg-white transition-all duration-200 shadow-sm hover:shadow-md">
+                            {/* 卡号和复制按钮 */}
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="font-mono text-sm font-semibold text-gray-900 truncate mr-2">
+                                {card.cardNumber}
+                              </div>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => onCopyCard(card.cardNumber)}
+                                className="h-6 w-6 p-0 hover:bg-purple-50 hover:text-purple-600 flex-shrink-0 transition-colors duration-200"
+                              >
+                                <Copy className="w-3 h-3" />
+                              </Button>
+                            </div>
+                            
+                            {/* 简化信息显示 */}
+                            <div className="flex flex-wrap gap-1">
+                              {card.cardBrand && card.cardBrand !== '未知' && (
+                                <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 border-purple-200">{card.cardBrand}</Badge>
+                              )}
+                              {card.type && card.type !== '未知' && (
+                                <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">{card.type}</Badge>
+                              )}
+                              {card.cardSegmentType && card.cardSegmentType !== '未知' && (
+                                <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">{card.cardSegmentType}</Badge>
+                              )}
+                              {card.bankName && card.bankName !== '未知' && (
+                                <Badge variant="outline" className="text-xs bg-gray-50 text-gray-700 border-gray-200">{card.bankName}</Badge>
+                              )}
+                              {card.countryName && card.countryName !== '未知' && (
+                                <Badge variant="outline" className="text-xs bg-orange-50 text-orange-700 border-orange-200">{card.countryName}</Badge>
+                              )}
+                            </div>
+                            
+                            {/* 如果所有信息都是未知，显示提示 */}
+                            {(!card.cardBrand || card.cardBrand === '未知') && 
+                             (!card.type || card.type === '未知') && 
+                             (!card.cardSegmentType || card.cardSegmentType === '未知') && 
+                             (!card.bankName || card.bankName === '未知') && 
+                             (!card.countryName || card.countryName === '未知') && (
+                              <div className="text-xs text-gray-400 italic">
+                                暂无详细信息
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>

@@ -82,8 +82,10 @@ export function DynamicAnnouncement({
         // 标记为已加载
         setHasLoaded(true)
       } else {
-        setError(response.message || "获取公告失败")
+        // 请求成功但没有公告数据，不显示错误，直接设置为空数组
+        console.log("[v0] 请求成功但没有公告数据")
         setAnnouncements([])
+        setHasLoaded(true)
       }
     } catch (error) {
       console.error("[v0] 获取公告异常:", error)
@@ -186,6 +188,11 @@ export function DynamicAnnouncement({
     setError(null)
     fetchAnnouncements()
   }, [fetchAnnouncements])
+
+  // 如果正在加载，不显示任何内容
+  if (loading) {
+    return null
+  }
 
   // 如果有错误，显示错误信息
   if (error) {

@@ -15,7 +15,7 @@
   },
   "features": {
     "debugMode": true,
-    "useMockData": true,
+    "useMockData": false,
     "enableLogging": true
   },
   "jwt": {

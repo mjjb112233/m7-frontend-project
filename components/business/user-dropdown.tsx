@@ -60,7 +60,6 @@ export function UserDropdown() {
             <div 
               onClick={handleAvatarClick}
               className="relative cursor-pointer"
-              title="点击编辑头像"
             >
               <DiceBearAvatar 
                 seed={user.avatarSeed || "Felix"}
@@ -68,6 +67,7 @@ export function UserDropdown() {
                 size={40}
                 showBorder={true}
                 animated={true}
+                showTitle={false}
                 className="hover:scale-105 transition-transform duration-200"
               />
             </div>
@@ -82,7 +82,7 @@ export function UserDropdown() {
               style={user.avatarStyle as any || "adventurer"}
               size={32}
               showBorder={true}
-              animated={true}
+              animated={false}
             />
             <div className="flex flex-col space-y-1 leading-none">
               <div className="flex items-center space-x-2">
