@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react'
 import { Check, X } from 'lucide-react'
 
-interface ToastProps {
+export interface ToastProps {
   message: string
   type?: 'success' | 'error'
   isVisible: boolean
@@ -52,3 +52,4 @@ export function Toast({ message, type = 'success', isVisible, onClose, duration 
     </div>
   )
 }
+

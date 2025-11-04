@@ -1,9 +1,12 @@
+"use client"
+
 import React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Filter, X, BarChart3, Plus } from "lucide-react"
+import { useLanguage } from "@/contexts/language-context"
 
 interface FilterOption {
   key: string
@@ -44,13 +47,14 @@ export function MultiDimensionFilter({
   hasFilters = false,
   onNewQuery
 }: MultiDimensionFilterProps) {
+  const { t } = useLanguage()
   const dimensions = [
-    { key: "brand", label: "卡片品牌" },
-    { key: "type", label: "卡片种类" },
-    { key: "level", label: "卡片等级" },
-    { key: "bank", label: "发卡行" },
-    { key: "country", label: "发卡国家" },
-    { key: "product", label: "产品名称" }
+    { key: "brand", label: t("bin.categoryLabels.brand") },
+    { key: "type", label: t("bin.categoryLabels.type") },
+    { key: "level", label: t("bin.categoryLabels.level") },
+    { key: "bank", label: t("bin.categoryLabels.bank") },
+    { key: "country", label: t("bin.categoryLabels.country") },
+    { key: "product", label: t("bin.categoryLabels.product") }
   ]
 
   const availableDimensions = dimensions.filter(
@@ -69,7 +73,7 @@ export function MultiDimensionFilter({
             <div className="w-6 h-6 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center shadow-lg">
               <Filter className="h-4 w-4 text-white" />
             </div>
-            多维度筛选
+            {t("bin.filter.title")}
           </div>
           {onNewQuery && (
             <Button
@@ -79,7 +83,7 @@ export function MultiDimensionFilter({
               className="text-xs hover:bg-blue-50 hover:border-blue-300"
             >
               <Plus className="w-3 h-3 mr-1" />
-              新查询
+              {t("bin.filter.newQuery")}
             </Button>
           )}
         </CardTitle>
@@ -93,12 +97,12 @@ export function MultiDimensionFilter({
                 <div className="w-4 h-4 bg-gradient-to-br from-purple-500 to-pink-500 rounded flex items-center justify-center">
                   <BarChart3 className="h-2.5 w-2.5 text-white" />
                 </div>
-                <span className="text-xs font-medium text-purple-700">统计</span>
+                <span className="text-xs font-medium text-purple-700">{t("bin.filter.statistics")}</span>
               </div>
               <div className="flex items-center gap-3 flex-wrap">
                 {totalQueryResults > 0 && (
                   <div className="flex items-center gap-1">
-                    <span className="text-xs text-gray-600">查询:</span>
+                    <span className="text-xs text-gray-600">{t("bin.filter.query")}</span>
                     <Badge variant="secondary" className="bg-gray-100 text-gray-700 text-xs px-2 py-0.5">
                       {totalQueryResults}
                     </Badge>
@@ -107,7 +111,7 @@ export function MultiDimensionFilter({
                 
                 {hasFilters && totalQueryResults > totalResults && (
                   <div className="flex items-center gap-1">
-                    <span className="text-xs text-orange-600">筛选:</span>
+                    <span className="text-xs text-orange-600">{t("bin.filter.filtered")}</span>
                     <Badge variant="secondary" className="bg-orange-100 text-orange-700 text-xs px-2 py-0.5">
                       {totalResults}
                     </Badge>
@@ -116,7 +120,7 @@ export function MultiDimensionFilter({
                 
                 {!hasFilters && totalResults > 0 && (
                   <div className="flex items-center gap-1">
-                    <span className="text-xs text-blue-600">总数:</span>
+                    <span className="text-xs text-blue-600">{t("bin.filter.total")}</span>
                     <Badge variant="secondary" className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5">
                       {totalResults}
                     </Badge>
@@ -125,7 +129,7 @@ export function MultiDimensionFilter({
                 
                 {groupCount > 0 && (
                   <div className="flex items-center gap-1">
-                    <span className="text-xs text-green-600">分类:</span>
+                    <span className="text-xs text-green-600">{t("bin.filter.classification")}</span>
                     <Badge variant="secondary" className="bg-green-100 text-green-700 text-xs px-2 py-0.5">
                       {groupCount}
                     </Badge>
@@ -137,18 +141,18 @@ export function MultiDimensionFilter({
         )}
         {/* 分类维度选择 */}
         <div className="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4 border border-blue-200">
-          <div className="text-sm font-medium text-blue-700 mb-3">主分类维度</div>
+          <div className="text-sm font-medium text-blue-700 mb-3">{t("bin.filter.mainCategory")}</div>
           <Select value={selectedCategory} onValueChange={onCategoryChange}>
             <SelectTrigger className="border-blue-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white/80">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="brand">卡片品牌</SelectItem>
-              <SelectItem value="type">卡片种类</SelectItem>
-              <SelectItem value="level">卡片等级</SelectItem>
-              <SelectItem value="bank">发卡行</SelectItem>
-              <SelectItem value="country">发卡国家</SelectItem>
-              <SelectItem value="product">产品名称</SelectItem>
+              <SelectItem value="brand">{t("bin.categoryLabels.brand")}</SelectItem>
+              <SelectItem value="type">{t("bin.categoryLabels.type")}</SelectItem>
+              <SelectItem value="level">{t("bin.categoryLabels.level")}</SelectItem>
+              <SelectItem value="bank">{t("bin.categoryLabels.bank")}</SelectItem>
+              <SelectItem value="country">{t("bin.categoryLabels.country")}</SelectItem>
+              <SelectItem value="product">{t("bin.categoryLabels.product")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -156,7 +160,7 @@ export function MultiDimensionFilter({
         {/* 添加新筛选 */}
         {availableDimensions.length > 0 && (
           <div>
-            <div className="text-sm font-medium text-gray-700 mb-3">添加筛选条件</div>
+            <div className="text-sm font-medium text-gray-700 mb-3">{t("bin.filter.addFilter")}</div>
             <div className="flex gap-2 flex-wrap">
               {availableDimensions.map(dimension => (
                 <Button
@@ -176,7 +180,7 @@ export function MultiDimensionFilter({
         {/* 当前筛选条件 */}
         {activeFilters.length > 0 && (
           <div className="space-y-3">
-            <div className="text-sm font-medium text-gray-700">当前筛选条件:</div>
+            <div className="text-sm font-medium text-gray-700">{t("bin.filter.currentFilters")}</div>
             <div className="space-y-2">
               {activeFilters.map(filter => (
                 <div key={filter.key} className="flex items-center gap-2 bg-white/80 rounded-lg p-3 border border-purple-200">
@@ -188,10 +192,10 @@ export function MultiDimensionFilter({
                     onValueChange={(value) => onFilterValueChange(filter.key, value)}
                   >
                     <SelectTrigger className="w-40 h-8 text-xs">
-                      <SelectValue placeholder="选择..." />
+                      <SelectValue placeholder={t("bin.filter.select")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">全部</SelectItem>
+                      <SelectItem value="all">{t("bin.filter.all")}</SelectItem>
                       {availableOptions[filter.key]?.filter(option => option && option.trim() !== '').map(option => (
                         <SelectItem key={option} value={option}>
                           {option}
@@ -215,7 +219,7 @@ export function MultiDimensionFilter({
 
         {activeFilters.length === 0 && (
           <div className="text-sm text-gray-500 text-center py-4">
-            添加筛选条件来过滤卡片结果
+            {t("bin.filter.addFilterHint")}
           </div>
         )}
       </CardContent>

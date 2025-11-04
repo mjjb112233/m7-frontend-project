@@ -100,10 +100,10 @@ export function InputStep({
           if (/^\d{3,4}$/.test(cvv)) {
             validCards.push(cardInfo)
           } else {
-            invalidCards.push(cardInfo + ' (CVV无效)')
+            invalidCards.push(cardInfo + ` (${t("cvv.invalidLabel")})`)
           }
         } else {
-          invalidCards.push('格式错误: ' + line)
+          invalidCards.push(`${t("cvv.formatError")}: ${line}`)
         }
       })
 
@@ -160,7 +160,7 @@ export function InputStep({
             {(isPrechecking || cardValidation.isProcessing) ? (
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                {cardValidation.isProcessing ? '银行卡验证中...' : `${t("cvv.prechecking")}...`}
+                {cardValidation.isProcessing ? `${t("cvv.cardValidating")}...` : `${t("cvv.prechecking")}...`}
               </div>
             ) : (
               t("cvv.startPrecheck")

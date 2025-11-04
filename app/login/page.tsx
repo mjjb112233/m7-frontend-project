@@ -54,7 +54,7 @@ export default function LoginPage() {
         }, 2000)
       } else {
         console.log("❌ 登录失败，显示错误提示")
-        setErrorMessage("登录失败，请检查账号密码")
+        setErrorMessage(t("login.loginFailed"))
         setShowErrorAlert(true)
       }
     } catch (error: any) {
@@ -64,7 +64,7 @@ export default function LoginPage() {
       if (error.message) {
         setErrorMessage(error.message)
       } else {
-        setErrorMessage("登录过程中发生错误")
+        setErrorMessage(t("login.loginError"))
       }
       setShowErrorAlert(true)
     } finally {
@@ -92,7 +92,7 @@ export default function LoginPage() {
                 <Alert className="border-green-200 bg-green-50">
                   <CheckCircle className="h-4 w-4 text-green-600" />
                   <AlertDescription className="text-green-800">
-                    登录成功！正在跳转到首页...
+                    {t("login.loginSuccess")}
                   </AlertDescription>
                 </Alert>
               )}

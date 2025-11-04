@@ -15,8 +15,10 @@ import { useAuth } from "@/contexts/auth-context" // Added useAuth import
 import { useRouter } from "next/navigation" // Added useRouter import
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { CheckCircle, XCircle } from "lucide-react"
+import { useLanguage } from "@/contexts/language-context"
 
 export default function RegisterPage() {
+  const { t } = useLanguage()
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false) // Added loading state
@@ -41,7 +43,7 @@ export default function RegisterPage() {
     setShowErrorAlert(false)
     
     if (formData.password !== formData.confirmPassword) {
-      setErrorMessage("密码不匹配")
+      setErrorMessage(t("register.passwordMismatch"))
       setShowErrorAlert(true)
       return
     }
@@ -57,7 +59,7 @@ export default function RegisterPage() {
           router.push("/login")
         }, 2000)
       } else {
-        setErrorMessage("注册失败，请重试")
+        setErrorMessage(t("register.registerFailed"))
         setShowErrorAlert(true)
       }
     } catch (error: any) {
@@ -67,7 +69,7 @@ export default function RegisterPage() {
       if (error.isApiError && error.apiMessage) {
         setErrorMessage(error.apiMessage)
       } else {
-        setErrorMessage("注册过程中发生错误")
+        setErrorMessage(t("register.registerError"))
       }
       setShowErrorAlert(true)
     } finally {
@@ -80,10 +82,10 @@ export default function RegisterPage() {
   }
 
   const passwordRequirements = [
-    { text: "至少8个字符", met: formData.password.length >= 8 },
-    { text: "包含大写字母", met: /[A-Z]/.test(formData.password) },
-    { text: "包含小写字母", met: /[a-z]/.test(formData.password) },
-    { text: "包含数字", met: /\d/.test(formData.password) },
+    { text: t("register.passwordReq8Chars"), met: formData.password.length >= 8 },
+    { text: t("register.passwordReqUppercase"), met: /[A-Z]/.test(formData.password) },
+    { text: t("register.passwordReqLowercase"), met: /[a-z]/.test(formData.password) },
+    { text: t("register.passwordReqNumber"), met: /\d/.test(formData.password) },
   ]
 
   return (
@@ -94,8 +96,8 @@ export default function RegisterPage() {
         <div className="w-full max-w-md">
           <Card className="border-border/50 shadow-lg">
             <CardHeader className="space-y-1 text-center">
-              <CardTitle className="text-2xl font-bold">创建账户</CardTitle>
-              <CardDescription>注册新账户开始使用我们的服务</CardDescription>
+              <CardTitle className="text-2xl font-bold">{t("register.title")}</CardTitle>
+              <CardDescription>{t("register.subtitle")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* 成功提示框 */}
@@ -103,7 +105,7 @@ export default function RegisterPage() {
                 <Alert className="border-green-200 bg-green-50">
                   <CheckCircle className="h-4 w-4 text-green-600" />
                   <AlertDescription className="text-green-800">
-                    注册成功！正在跳转到登录页面...
+                    {t("register.registerSuccess")}
                   </AlertDescription>
                 </Alert>
               )}
@@ -125,7 +127,7 @@ export default function RegisterPage() {
                         }}
                         className="text-red-700 border-red-300 hover:bg-red-100"
                       >
-                        返回注册
+                        {t("register.backToRegister")}
                       </Button>
                     </div>
                   </AlertDescription>
@@ -134,11 +136,11 @@ export default function RegisterPage() {
 
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="username">用户名</Label>
+                  <Label htmlFor="username">{t("register.username")}</Label>
                   <Input
                     id="username"
                     type="text"
-                    placeholder="输入您的用户名"
+                    placeholder={t("register.usernamePlaceholder")}
                     value={formData.username}
                     onChange={(e) => handleInputChange("username", e.target.value)}
                     required
@@ -148,11 +150,11 @@ export default function RegisterPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="email">邮箱地址</Label>
+                  <Label htmlFor="email">{t("register.email")}</Label>
                   <Input
                     id="email"
                     type="email"
-                    placeholder="输入您的邮箱"
+                    placeholder={t("register.emailPlaceholder")}
                     value={formData.email}
                     onChange={(e) => handleInputChange("email", e.target.value)}
                     required
@@ -162,12 +164,12 @@ export default function RegisterPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="password">密码</Label>
+                  <Label htmlFor="password">{t("register.password")}</Label>
                   <div className="relative">
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
-                      placeholder="创建安全密码"
+                      placeholder={t("register.passwordPlaceholder")}
                       value={formData.password}
                       onChange={(e) => handleInputChange("password", e.target.value)}
                       required
@@ -206,12 +208,12 @@ export default function RegisterPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">确认密码</Label>
+                  <Label htmlFor="confirmPassword">{t("register.confirmPassword")}</Label>
                   <div className="relative">
                     <Input
                       id="confirmPassword"
                       type={showConfirmPassword ? "text" : "password"}
-                      placeholder="再次输入密码"
+                      placeholder={t("register.confirmPasswordPlaceholder")}
                       value={formData.confirmPassword}
                       onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
                       required
@@ -232,7 +234,7 @@ export default function RegisterPage() {
                     </Button>
                   </div>
                   {formData.confirmPassword && formData.password !== formData.confirmPassword && (
-                    <p className="text-xs text-destructive">密码不匹配</p>
+                    <p className="text-xs text-destructive">{t("register.passwordMismatch")}</p>
                   )}
                 </div>
 
@@ -243,13 +245,13 @@ export default function RegisterPage() {
                     onCheckedChange={(checked) => handleInputChange("agreeToTerms", checked as boolean)}
                   />
                   <Label htmlFor="terms" className="text-sm text-muted-foreground">
-                    我同意{" "}
+                    {t("register.agreeTerms")}{" "}
                     <Link href="/terms" className="text-primary hover:underline">
-                      服务条款
+                      {t("register.termsOfService")}
                     </Link>{" "}
-                    和{" "}
+                    {t("register.and")}{" "}
                     <Link href="/privacy" className="text-primary hover:underline">
-                      隐私政策
+                      {t("register.privacyPolicy")}
                     </Link>
                   </Label>
                 </div>
@@ -259,14 +261,14 @@ export default function RegisterPage() {
                   className="w-full h-11 font-medium bg-black text-white hover:bg-gray-800"
                   disabled={!formData.agreeToTerms || formData.password !== formData.confirmPassword || isLoading}
                 >
-                  {isLoading ? "创建中..." : "创建账户"}
+                  {isLoading ? t("register.creating") : t("register.registerButton")}
                 </Button>
               </form>
 
               <div className="text-center text-sm text-muted-foreground">
-                已有账户？{" "}
+                {t("register.hasAccount")}{" "}
                 <Link href="/login" className="text-primary hover:underline font-medium">
-                  立即登录
+                  {t("register.login")}
                 </Link>
               </div>
             </CardContent>

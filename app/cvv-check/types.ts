@@ -6,7 +6,7 @@ export interface CVVResult {
   cvv: string
   expiry: string
   other: string | null
-  detectionCompletedAt: string
+  detectionCompletedAt: number // Unix秒级时间戳
 }
 
 export interface DetectionResult {
@@ -22,7 +22,7 @@ export interface Channel {
   rate: string
   speed: string
   description: string
-  status: "online" | "offline" | "busy"
+  status: "idle" | "offline" | "busy"
   consumption?: string
 }
 
@@ -39,12 +39,6 @@ export interface DetectionConfig {
   detectionModes: DetectionMode[]
 }
 
-export interface DetectingCVV {
-  cvv: string
-  startTime: Date
-  elapsedTime: number
-}
-
 export interface DetectionStatus {
   currentCVV: string
   processedCount: number
@@ -53,7 +47,44 @@ export interface DetectionStatus {
   invalidCount: number
   unknownCount: number
   isRunning: boolean
-  detectingCVVs: DetectingCVV[]
+}
+
+// API响应：检测进度数据
+export interface DetectionProgressResponse {
+  status: "detecting" | "completed" | "stopped"
+  total: number
+  processed: number
+  success: number
+  failed: number
+  validCount: number
+  invalidCount: number
+  unknownCount: number
+  totalConsumed: number
+  serviceStatus: string // 检测服务状态（固定为"在线"）
+  channelStatus: string // 通道状态（"在线"/"拥挤"/"繁忙"）
+  channelUserCount: number // 通道用户人数（200-10000）
+  channelRate: number // 通道单卡消耗（任务创建时的快照）
+  channelId: number // 通道ID（任务创建时的快照）
+  channelSpeed: string // 通道检测速度（任务创建时的快照，如："快速"/"中等"/"慢速"）
+  channelDescription: string // 通道介绍/描述（任务创建时的快照）
+}
+
+// API响应：检测结果数据
+export interface DetectionResultsResponse {
+  validResults: CVVResult[]
+  invalidResults: CVVResult[]
+  unknownResults: CVVResult[]
+  validCount: number
+  invalidCount: number
+  unknownCount: number
+  consumedCoins: number
+  completedAt?: number // 检测完毕的时间（Unix时间戳秒级，可选）
+  expiresAt?: number // 过期时间（Unix时间戳秒级，可选）
+}
+
+// API响应：取消状态数据
+export interface CancelStatusResponse {
+  status: "processing" | "completed"
 }
 
 export interface ConnectionStatus {
@@ -62,7 +93,7 @@ export interface ConnectionStatus {
   lastHeartbeat: Date | null
 }
 
-export type UserDetectionStatus = "not_detected" | "detecting" | "completed"
+export type UserDetectionStatus = "idle" | "detecting" | "completed"
 
 export interface DetectionProgressData {
   totalCards: number

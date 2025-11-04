@@ -222,7 +222,7 @@
 ```
 
 ### 获取用户检测状态
-- **URL**: `GET /cvv-check/user-status`
+- **URL**: `GET /cvv-check/detection-status`
 - **描述**: 获取用户当前检测状态
 - **Headers**: `Authorization: Bearer <token>`
 - **响应**:

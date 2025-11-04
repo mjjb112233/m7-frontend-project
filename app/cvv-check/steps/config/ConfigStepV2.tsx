@@ -137,8 +137,8 @@ export function ConfigStepV2({
   if (isLoadingConfig) {
     return (
       <LoadingState 
-        message="正在获取检测配置..."
-        description="请稍候，正在加载可用的检测模式和通道信息"
+        message={t("cvv.loadingConfig")}
+        description={t("cvv.loadingConfigDesc")}
       />
     )
   }
@@ -148,8 +148,8 @@ export function ConfigStepV2({
     return (
       <Card className="max-w-4xl mx-auto">
         <CardContent className="p-6 text-center">
-          <div className="text-red-500 mb-4">配置加载失败: {configError}</div>
-          <Button onClick={() => window.location.reload()}>重新加载</Button>
+          <div className="text-red-500 mb-4">{t("cvv.configLoadFailed")}: {configError}</div>
+          <Button onClick={() => window.location.reload()}>{t("cvv.reload")}</Button>
         </CardContent>
       </Card>
     )
@@ -170,7 +170,7 @@ export function ConfigStepV2({
         {isLoadingConfig && (
           <div className="flex items-center gap-2 text-xs text-gray-600 justify-center mt-2">
             <div className="w-3 h-3 border-2 border-gray-300 border-t-blue-600 rounded-full animate-spin"></div>
-            正在加载检测配置...
+            {t("cvv.loadingConfig")}
           </div>
         )}
       </CardHeader>
@@ -206,7 +206,7 @@ export function ConfigStepV2({
                     title={modeConfig?.description}
                   >
                     {modeData.name}
-                    {!isEnabled && <span className="ml-1 text-xs">(维护中)</span>}
+                    {!isEnabled && <span className="ml-1 text-xs">({t("cvv.maintenance")})</span>}
                   </Button>
                 )
               })}
@@ -239,11 +239,11 @@ export function ConfigStepV2({
                     className={`relative overflow-hidden cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:shadow-xl hover:-translate-y-1 border-0 shadow-lg ${
                       selectedChannel?.id === channel.id
                         ? `ring-2 ring-${colorTheme.from.split("-")[0]}-500 bg-${colorTheme.bg} shadow-xl`
-                        : channel.status !== "online"
+                        : channel.status !== "idle"
                           ? "opacity-50 cursor-not-allowed"
                           : ""
                     }`}
-                    onClick={() => channel.status === "online" && handleChannelSelect(channel)}
+                    onClick={() => channel.status === "idle" && handleChannelSelect(channel)}
                   >
                     <div
                       className={`absolute inset-0 bg-gradient-to-br from-${colorTheme.bg} to-${colorTheme.bg} opacity-60`}
@@ -256,7 +256,7 @@ export function ConfigStepV2({
                         <span className="font-semibold text-sm text-gray-900">{channel.name}</span>
                         <Badge
                           variant={
-                            channel.status === "online"
+                            channel.status === "idle"
                               ? "default"
                               : channel.status === "busy"
                                 ? "secondary"
@@ -264,18 +264,18 @@ export function ConfigStepV2({
                           }
                           className="text-xs font-medium"
                         >
-                          {channel.status === "online" ? t("cvv.statusOnline") : channel.status === "busy" ? t("cvv.statusBusy") : t("cvv.statusOffline")}
+                          {channel.status === "idle" ? t("cvv.statusOnline") : channel.status === "busy" ? t("cvv.statusBusy") : t("cvv.statusOffline")}
                         </Badge>
                       </div>
                       <div className="space-y-1 text-xs text-gray-600">
                         <div className="flex items-center justify-between">
-                          <span>消耗:</span>
+                          <span>{t("cvv.consumptionLabel")}:</span>
                           <span className={`font-semibold text-${colorTheme.from.split("-")[0]}-600`}>
-                            {channel.consumption || channel.rate} M币
+                            {channel.consumption || channel.rate} {t("cvv.mCoins")}
                           </span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span>速度:</span>
+                          <span>{t("cvv.speedLabel")}:</span>
                           <span className="font-semibold">{channel.speed}</span>
                         </div>
                         <div className="text-xs text-gray-500 mt-2">{channel.description}</div>

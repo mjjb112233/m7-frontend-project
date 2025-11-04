@@ -36,27 +36,5 @@ export type PaymentStatus = "pending" | "paid" | "expired" | "cancelled"
 // 提取码状态
 export type ExtractCodeStatus = "unused" | "used" | "expired"
 
-// 通用响应类型
-export interface ApiResponse<T> {
-  success: boolean
-  data?: T | null
-  message?: string
-  error?: string
-}
-
-// 分页参数
-export interface PaginationParams {
-  page?: number
-  limit?: number
-  offset?: number
-}
-
-// 分页响应
-export interface PaginatedResponse<T> {
-  success: boolean
-  data: T[]
-  total: number
-  page: number
-  limit: number
-  message?: string
-}
+// 重新导出API类型（向后兼容）
+export type { ApiResponse, RequestConfig, PaginationParams, PaginatedResponse } from './api.types'

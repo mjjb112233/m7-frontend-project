@@ -3,23 +3,9 @@
  * 提供带鉴权和不带鉴权的请求方法
  */
 
-// 通用API响应接口
-export interface ApiResponse<T = any> {
-  success: boolean
-  data?: T
-  message: string
-  error?: string
-}
+import type { ApiResponse, RequestConfig } from '@/types/api.types'
 
-// 请求配置接口
-export interface RequestConfig {
-  method?: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH'
-  headers?: Record<string, string>
-  body?: any
-  timeout?: number // 自定义超时时间（毫秒）
-}
-
-import { getApiBaseUrl, getApiConfig } from '@/lib/config'
+import { getApiBaseUrl, getApiConfig } from '@/lib/config/index'
 
 /**
  * 不带鉴权的请求方法

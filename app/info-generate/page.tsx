@@ -10,6 +10,7 @@ import { Copy, Download, MapPin, User, CreditCard, Phone, Mail, AlertCircle, Spa
 import Header from "@/components/layout/header"
 import { InfoGenerateFooter } from "@/components/layout/info-generate-footer"
 import { AuthContext } from "@/contexts/auth-context"
+import { getBrandingConfig } from "@/lib/config"
 
 interface GeneratedInfo {
   cardNumber: string
@@ -167,7 +168,14 @@ export default function InfoGeneratePage() {
 
   // 复制到剪贴板
   const copyToClipboard = (info: GeneratedInfo) => {
-    const text = `卡号: ${info.cardNumber}\n有效期: ${info.month}/${info.year}\n姓名: ${info.fullName}\n电话: ${info.phone}\n邮箱: ${info.email}\n地址: ${info.address}\n城市: ${info.city}\n州: ${info.state}\n邮编: ${info.zipCode}\n国家: ${info.country}`
+    let websiteName = "cc-m7.com"
+    try {
+      const brandingConfig = getBrandingConfig()
+      websiteName = brandingConfig?.copyWebsiteName || "cc-m7.com"
+    } catch (error) {
+      console.error("Failed to get copy website name from config:", error)
+    }
+    const text = `卡号: ${info.cardNumber}  ---->${websiteName}\n有效期: ${info.month}/${info.year}  ---->${websiteName}\n姓名: ${info.fullName}  ---->${websiteName}\n电话: ${info.phone}  ---->${websiteName}\n邮箱: ${info.email}  ---->${websiteName}\n地址: ${info.address}  ---->${websiteName}\n城市: ${info.city}  ---->${websiteName}\n州: ${info.state}  ---->${websiteName}\n邮编: ${info.zipCode}  ---->${websiteName}\n国家: ${info.country}  ---->${websiteName}`
     
     navigator.clipboard.writeText(text).then(() => {
       showToastMessage("信息已复制到剪贴板", "success")
@@ -178,7 +186,14 @@ export default function InfoGeneratePage() {
 
   // 复制所有失败卡号
   const copyAllFailedCards = () => {
-    const allFailedCards = failedCardNumbers.join('\n')
+    let websiteName = "cc-m7.com"
+    try {
+      const brandingConfig = getBrandingConfig()
+      websiteName = brandingConfig?.copyWebsiteName || "cc-m7.com"
+    } catch (error) {
+      console.error("Failed to get copy website name from config:", error)
+    }
+    const allFailedCards = failedCardNumbers.map(cardNumber => `${cardNumber}  ---->${websiteName}`).join('\n')
     navigator.clipboard.writeText(allFailedCards).then(() => {
       showToastMessage("失败卡号已复制到剪贴板", "success")
     }).catch(() => {

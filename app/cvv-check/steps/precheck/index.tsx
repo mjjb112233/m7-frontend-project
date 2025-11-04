@@ -2,10 +2,12 @@ import React, { useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { CheckCircle, XCircle, TrendingUp, X } from "lucide-react"
+import { CheckCircle, XCircle, TrendingUp, X, AlertCircle, Copy } from "lucide-react"
 import { useLanguage } from "@/contexts/language-context"
 import { useCVVCheckAPI } from "@/lib/api"
+import { getBrandingConfig } from "@/lib/config/index"
 import { Channel, UserDetectionStatus } from "../../types"
+import { Toast } from "@/components/shared/toast"
 
 interface PrecheckStepProps {
   precheckResults: { valid: string[]; invalid: string[] }
@@ -49,6 +51,14 @@ export function PrecheckStep({
   // 余额不足对话框状态
   const [showInsufficientBalanceDialog, setShowInsufficientBalanceDialog] = useState(false)
   const [insufficientBalanceMessage, setInsufficientBalanceMessage] = useState("")
+  
+  // 通用错误对话框状态
+  const [showErrorDialog, setShowErrorDialog] = useState(false)
+  const [errorMessage, setErrorMessage] = useState("")
+  
+  // Toast提示状态
+  const [showToast, setShowToast] = useState(false)
+  const [toastMessage, setToastMessage] = useState("")
 
   // 将原始数据转换为掩码显示格式
   const formatCardForDisplay = (originalLine: string): string => {
@@ -59,6 +69,66 @@ export function PrecheckStep({
       return `${maskedNumber}  ${month}/${year}  CVV: ${cvv}`
     }
     return originalLine
+  }
+
+  // 批量复制有效卡片
+  const copyAllValidCards = () => {
+    if (precheckResults.valid.length === 0) return
+    
+    let websiteName = "cc-m7.com"
+    try {
+      const brandingConfig = getBrandingConfig()
+      websiteName = brandingConfig?.copyWebsiteName || "cc-m7.com"
+    } catch (error) {
+      console.error("Failed to get copy website name from config:", error)
+    }
+    // 将格式从 卡号|月份|年份|CVV 转换为 卡号|月份/年份|CVV，并添加后缀
+    const formattedCards = precheckResults.valid.map((originalLine: string) => {
+      const parts = originalLine.split('|')
+      if (parts.length >= 4) {
+        const [number, month, year, cvv] = parts
+        return `${number}|${month}/${year}|${cvv}  ---->${websiteName}`
+      }
+      return `${originalLine}  ---->${websiteName}`
+    }).join('\n')
+    
+    navigator.clipboard.writeText(formattedCards).then(() => {
+      setToastMessage(t("cvv.copiedValidCards").replace("{count}", precheckResults.valid.length.toString()))
+      setShowToast(true)
+    }).catch(() => {
+      setToastMessage(t("cvv.copyFailed"))
+      setShowToast(true)
+    })
+  }
+
+  // 批量复制无效卡片
+  const copyAllInvalidCards = () => {
+    if (precheckResults.invalid.length === 0) return
+    
+    let websiteName = "cc-m7.com"
+    try {
+      const brandingConfig = getBrandingConfig()
+      websiteName = brandingConfig?.copyWebsiteName || "cc-m7.com"
+    } catch (error) {
+      console.error("Failed to get copy website name from config:", error)
+    }
+    // 将格式从 卡号|月份|年份|CVV 转换为 卡号|月份/年份|CVV，并添加后缀
+    const formattedCards = precheckResults.invalid.map((originalLine: string) => {
+      const parts = originalLine.split('|')
+      if (parts.length >= 4) {
+        const [number, month, year, cvv] = parts
+        return `${number}|${month}/${year}|${cvv}  ---->${websiteName}`
+      }
+      return `${originalLine}  ---->${websiteName}`
+    }).join('\n')
+    
+    navigator.clipboard.writeText(formattedCards).then(() => {
+      setToastMessage(t("cvv.copiedInvalidCards").replace("{count}", precheckResults.invalid.length.toString()))
+      setShowToast(true)
+    }).catch(() => {
+      setToastMessage(t("cvv.copyFailed"))
+      setShowToast(true)
+    })
   }
 
   // 启动检测处理函数
@@ -101,20 +171,21 @@ export function PrecheckStep({
         // 检查API响应
         if (response.success === false) {
           // 检查是否是余额不足错误
-          if (response.err && response.err.includes("余额不足")) {
-            setInsufficientBalanceMessage(response.err || "余额不足，请充值后重试")
+          if (response.message && response.message.includes(t("cvv.insufficientBalance"))) {
+            setInsufficientBalanceMessage(response.message || t("cvv.insufficientBalanceRetry"))
             setShowInsufficientBalanceDialog(true)
             setIsChecking(false)
             return
           } else {
-            // 其他错误
-            console.error("检测启动失败:", response.err)
+            // 其他错误，显示通用错误对话框
+            setErrorMessage(response.message || t("cvv.detectionStartFailedRetry"))
+            setShowErrorDialog(true)
             setIsChecking(false)
             return
           }
         }
         
-        // success为true，正常进入下一步
+        // success为true或没有success字段（旧格式兼容），正常进入下一步
         if (response.detectionId) {
           setLocalDetectionUuid(response.detectionId)
         }
@@ -122,11 +193,15 @@ export function PrecheckStep({
         setIsChecking(false)
         onNext()
       } else {
-        console.error("检测启动失败")
+        // result为null的情况
+        setErrorMessage(t("cvv.detectionStartFailedRetry"))
+        setShowErrorDialog(true)
         setIsChecking(false)
       }
     } catch (error) {
       console.error("启动检测失败:", error)
+      setErrorMessage(error instanceof Error ? error.message : t("cvv.detectionStartFailedRetry"))
+      setShowErrorDialog(true)
       setIsChecking(false)
     }
   }
@@ -147,11 +222,11 @@ export function PrecheckStep({
           <div className="flex items-center gap-4 text-sm">
             <div className="flex items-center gap-1 text-green-600">
               <CheckCircle className="h-4 w-4" />
-              <span className="font-medium">有效: {precheckResults.valid.length}</span>
+              <span className="font-medium">{t("cvv.validCount")}: {precheckResults.valid.length}</span>
             </div>
             <div className="flex items-center gap-1 text-red-600">
               <XCircle className="h-4 w-4" />
-              <span className="font-medium">无效: {precheckResults.invalid.length}</span>
+              <span className="font-medium">{t("cvv.invalidCount")}: {precheckResults.invalid.length}</span>
             </div>
           </div>
         </div>
@@ -215,11 +290,24 @@ export function PrecheckStep({
           <Card className="relative overflow-hidden border-green-200 bg-green-50/80 shadow-lg hover:shadow-xl transition-all duration-300">
             <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-green-200/30 to-emerald-200/30 rounded-full -translate-y-10 translate-x-10"></div>
             <CardHeader className="relative pb-2">
-              <CardTitle className="text-sm text-green-700 flex items-center gap-2">
-                <div className="w-5 h-5 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center shadow-lg">
-                  <CheckCircle className="h-3 w-3 text-white" />
+              <CardTitle className="text-sm text-green-700 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center shadow-lg">
+                    <CheckCircle className="h-3 w-3 text-white" />
+                  </div>
+                  {t("cvv.precheckSuccess")}
                 </div>
-                {t("cvv.precheckSuccess")}
+                {precheckResults.valid.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={copyAllValidCards}
+                    className="h-6 w-6 p-0 hover:bg-green-100 hover:text-green-700 transition-colors"
+                    title={t("cvv.copyAllValidCards")}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </Button>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent className="relative pt-0">
@@ -237,18 +325,31 @@ export function PrecheckStep({
                   ))}
                 </div>
               )}
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-green-500 to-emerald-500"></div>
             </CardContent>
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-green-500 to-emerald-500"></div>
           </Card>
 
           <Card className="relative overflow-hidden border-red-200 bg-red-50/80 shadow-lg hover:shadow-xl transition-all duration-300">
             <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-red-200/30 to-pink-200/30 rounded-full -translate-y-10 translate-x-10"></div>
             <CardHeader className="relative pb-2">
-              <CardTitle className="text-sm text-red-700 flex items-center gap-2">
-                <div className="w-5 h-5 bg-gradient-to-br from-red-500 to-pink-500 rounded-lg flex items-center justify-center shadow-lg">
-                  <XCircle className="h-3 w-3 text-white" />
+              <CardTitle className="text-sm text-red-700 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 bg-gradient-to-br from-red-500 to-pink-500 rounded-lg flex items-center justify-center shadow-lg">
+                    <XCircle className="h-3 w-3 text-white" />
+                  </div>
+                  {t("cvv.precheckFailed")}
                 </div>
-                {t("cvv.precheckFailed")}
+                {precheckResults.invalid.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={copyAllInvalidCards}
+                    className="h-6 w-6 p-0 hover:bg-red-100 hover:text-red-700 transition-colors"
+                    title={t("cvv.copyAllInvalidCards")}
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                  </Button>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent className="relative pt-0">
@@ -261,13 +362,13 @@ export function PrecheckStep({
                       key={index}
                       className="p-2 bg-white rounded-lg border border-red-200 font-mono text-xs shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden"
                     >
-                      {formatCardForDisplay(originalLine)} (无效)
+                      {formatCardForDisplay(originalLine)} ({t("cvv.invalidLabel")})
                     </div>
                   ))}
                 </div>
               )}
-              <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 to-pink-500"></div>
             </CardContent>
+            <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 to-pink-500"></div>
           </Card>
         </div>
 
@@ -308,14 +409,14 @@ export function PrecheckStep({
               <X className="h-6 w-6 text-red-600" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">余额不足</h3>
-              <p className="text-sm text-gray-600">无法启动检测</p>
+              <h3 className="text-lg font-semibold text-gray-900">{t("cvv.insufficientBalanceTitle")}</h3>
+              <p className="text-sm text-gray-600">{t("cvv.cannotStartDetection")}</p>
             </div>
           </div>
           
           <div className="mb-6">
             <p className="text-gray-700 mb-2">{insufficientBalanceMessage}</p>
-            <p className="text-sm text-gray-500">请先充值后再进行检测。</p>
+            <p className="text-sm text-gray-500">{t("cvv.pleaseRechargeFirst")}</p>
           </div>
           
           <div className="flex gap-3 justify-end">
@@ -323,7 +424,7 @@ export function PrecheckStep({
               onClick={() => setShowInsufficientBalanceDialog(false)}
               className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
             >
-              取消
+              {t("cvv.cancel")}
             </button>
             <button
               onClick={() => {
@@ -333,12 +434,54 @@ export function PrecheckStep({
               }}
               className="px-6 py-2 bg-gradient-to-r from-purple-500 to-blue-500 text-white rounded-lg hover:from-purple-600 hover:to-blue-600 transition-all duration-300 shadow-lg"
             >
-              去充值
+              {t("cvv.goToRecharge")}
             </button>
           </div>
         </div>
       </div>
     )}
+
+    {/* 通用错误对话框 */}
+    {showErrorDialog && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 relative overflow-hidden border-0 shadow-2xl">
+          <div className="absolute inset-0 bg-gradient-to-br from-red-50 to-pink-50 opacity-60"></div>
+          <div className="relative">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg flex-shrink-0">
+                <AlertCircle className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">{t("cvv.detectionStartFailed")}</h3>
+                <p className="text-sm text-gray-600">{t("cvv.cannotStartDetectionTask")}</p>
+              </div>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-gray-700">{errorMessage}</p>
+            </div>
+            
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowErrorDialog(false)}
+                className="px-6 py-2 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-lg hover:from-red-600 hover:to-pink-600 transition-all duration-300 shadow-lg hover:scale-105"
+              >
+                {t("cvv.confirm")}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+    
+    {/* Toast提示 */}
+    <Toast
+      message={toastMessage}
+      type="success"
+      isVisible={showToast}
+      onClose={() => setShowToast(false)}
+      duration={2000}
+    />
   </>
   )
 }

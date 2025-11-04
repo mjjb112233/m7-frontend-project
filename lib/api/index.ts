@@ -1,4 +1,8 @@
-// 统一API入口文件
+/**
+ * 统一API入口文件
+ */
+
+// 导出功能API Hooks
 export { useCVVCheckAPI } from './cvv-check'
 export { useBinClassifyAPI } from './bin-classify'
 export { useBINQuery } from './bin-query'
@@ -17,6 +21,7 @@ export {
   authPut,
   authDelete,
   authPatch,
-  type ApiResponse,
-  type RequestConfig
 } from './request'
+
+// 导出类型（从统一类型系统）
+export type { ApiResponse, RequestConfig } from '@/types/api.types'

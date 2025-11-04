@@ -7,7 +7,10 @@ import {
   DetectionResultData,
   Channel,
   DetectionMode,
-  ErrorType
+  ErrorType,
+  DetectionProgressResponse,
+  DetectionResultsResponse,
+  CancelStatusResponse
 } from "@/app/cvv-check/types"
 
 export function useCVVCheckAPI() {
@@ -19,7 +22,7 @@ export function useCVVCheckAPI() {
     
     console.log("[CVV-API] fetchUserDetectionStatus 被调用")
     try {
-      const response = await authenticatedRequest('/cvv-check/user-status', token)
+      const response = await authenticatedRequest('/cvv-check/detection-status', token)
       
       if (response.success) {
         const userData = response.data as { 
@@ -27,13 +30,13 @@ export function useCVVCheckAPI() {
           detectionId?: string | null
         }
         const status = userData.status as UserDetectionStatus
-        if (status === "not_detected" || status === "detecting" || status === "completed") {
+        if (status === "idle" || status === "detecting" || status === "completed") {
           return {
             status,
             detectionId: userData.detectionId
           }
         } else {
-          return { status: "not_detected" as UserDetectionStatus }
+          return { status: "idle" as UserDetectionStatus }
         }
       } else {
         console.error('Failed to get user detection status:', response.message)
@@ -101,11 +104,8 @@ export function useCVVCheckAPI() {
     if (!token || !localDetectionUuid) return null
     
     try {
-      const response = await authenticatedRequest('/cvv-check/detection-results', token, {
-        method: 'POST',
-        body: JSON.stringify({
-          detectionId: localDetectionUuid
-        })
+      const response = await authenticatedRequest(`/cvv-check/detection-results?detectionId=${localDetectionUuid}`, token, {
+        method: 'POST'
       })
       
       if (response.success) {
@@ -160,11 +160,20 @@ export function useCVVCheckAPI() {
         return response.data
       } else {
         console.error("[CVV-API] Detection start failed:", response)
-        return null
+        // 返回错误信息对象，便于前端处理
+        return {
+          success: false,
+          message: response.message || "检测启动失败",
+          error: response.error
+        }
       }
     } catch (error) {
       console.error("[CVV-API] Error sending detection config:", error)
-      return null
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : "检测启动失败，请稍后重试",
+        error: "NETWORK_ERROR"
+      }
     }
   }
   
@@ -192,6 +201,27 @@ export function useCVVCheckAPI() {
     }
   }
   
+  // 获取取消状态（用于查询已取消任务的停止状态）
+  const fetchCancelStatus = async (localDetectionUuid: string) => {
+    if (!token || !localDetectionUuid) return null
+    
+    try {
+      const response = await authenticatedRequest(`/cvv-check/cancel-status?detectionId=${localDetectionUuid}`, token, {
+        method: 'GET'
+      })
+      
+      if (response.success) {
+        return response.data as { status: "processing" | "completed" }
+      } else {
+        console.error('Failed to get cancel status:', response.message)
+        return null
+      }
+    } catch (error) {
+      console.error('Error getting cancel status:', error)
+      return null
+    }
+  }
+  
   return {
     fetchUserDetectionStatus,
     fetchDetectionConfig,
@@ -200,5 +230,6 @@ export function useCVVCheckAPI() {
     stopDetection,
     startDetection,
     resetDetectionStatus,
+    fetchCancelStatus,
   }
 }

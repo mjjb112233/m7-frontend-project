@@ -312,7 +312,7 @@ CREATE TABLE operation_logs (
 ### CVV检测相关
 - GET /api/cvv-check/config - 获取检测配置
 - GET /api/cvv-check/status - 获取检测状态
-- GET /api/cvv-check/user-status - 获取用户检测状态
+- GET /api/cvv-check/detection-status - 获取用户检测状态
 - POST /api/cvv-check/start-detection - 开始检测
 - POST /api/cvv-check/stop-detection - 停止检测
 - GET /api/cvv-check/detection-progress - 获取检测进度

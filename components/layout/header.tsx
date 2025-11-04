@@ -9,8 +9,8 @@
  * 5. 提供用户操作菜单（登录、注册、个人中心等）
  * 
  * 权限控制：
- * - 未登录用户：显示CVV检测、BIN分类、充值页面
- * - 1级用户：显示CVV检测、BIN分类、BIN查询、充值页面
+ * - 未登录用户：显示CVV检测、BIN查询、卡分类、充值页面
+ * - 1级用户：显示CVV检测、BIN查询、卡分类、充值页面
  * - 2级用户：显示1级功能 + 信息生成页面
  */
 
@@ -24,6 +24,7 @@ import { useLanguage } from "@/contexts/language-context"
 import { useAuth } from "@/contexts/auth-context"
 import { UserDropdown } from "@/components/business/user-dropdown"
 import { CreditCard, Shield, Lock, Zap, Menu, X } from "lucide-react"
+import { Logo } from "./logo"
 import { useState } from "react"
 
 export default function Header() {
@@ -43,9 +44,10 @@ export default function Header() {
     ]
 
     if (!user) {
-      // 未登录用户：显示CVV检测、BIN分类、充值页面
+      // 未登录用户：显示CVV检测、BIN查询、卡分类、充值页面
       defaultItems.push(
         { href: "/cvv-check", label: t("nav.cvvCheck"), icon: Shield },
+        { href: "/bin-query", label: t("nav.binQuery"), icon: Lock },
         { href: "/bin-classify", label: t("nav.binClassify"), icon: CreditCard },
         { href: "/recharge", label: t("nav.recharge"), icon: Zap }
       )
@@ -54,12 +56,12 @@ export default function Header() {
 
     const userLevel = user.level || 0  // 获取用户等级，默认为0
 
-    // 1级用户：显示基础功能（CVV检测、BIN分类、卡信息提取、充值）
+    // 1级用户：显示基础功能（CVV检测、BIN查询、卡分类、充值）
     if (userLevel >= 1) {
       defaultItems.push(
         { href: "/cvv-check", label: t("nav.cvvCheck"), icon: Shield },
-        { href: "/bin-classify", label: t("nav.binClassify"), icon: CreditCard },
         { href: "/bin-query", label: t("nav.binQuery"), icon: Lock },
+        { href: "/bin-classify", label: t("nav.binClassify"), icon: CreditCard },
         { href: "/recharge", label: t("nav.recharge"), icon: Zap }
       )
     }
@@ -82,9 +84,8 @@ export default function Header() {
         <div className="max-w-7xl mx-auto px-6 py-3">
           <div className="flex items-center justify-between">
             <div className="flex-shrink-0">
-              <Link href="/" className="flex items-center space-x-2">
-                <CreditCard className="w-6 h-6 text-primary" />
-                <span className="text-lg font-semibold text-foreground">FinTech Pro</span>
+              <Link href="/" className="flex items-center">
+                <Logo width={157} height={48} className="h-10 w-auto text-primary" />
               </Link>
             </div>
 

@@ -1,8 +1,11 @@
+"use client"
+
 import React from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { BarChart3, Search } from "lucide-react"
+import { useLanguage } from "@/contexts/language-context"
 
 interface CardInputProps {
   cardInput: string
@@ -12,6 +15,7 @@ interface CardInputProps {
 }
 
 export function CardInput({ cardInput, setCardInput, onQuery, isProcessing }: CardInputProps) {
+  const { t } = useLanguage()
   const cardCount = cardInput.split("\n").filter((line) => line.trim()).length
 
   return (
@@ -23,30 +27,22 @@ export function CardInput({ cardInput, setCardInput, onQuery, isProcessing }: Ca
           <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center shadow-lg">
             <BarChart3 className="h-4 w-4 text-white" />
           </div>
-          卡号数据输入
+          {t("bin.cardInputTitle")}
         </CardTitle>
       </CardHeader>
       <CardContent className="relative p-4">
         <Textarea
           value={cardInput}
           onChange={(e) => setCardInput(e.target.value)}
-          placeholder={
-            "请输入卡号信息，每行一个：\n\n" +
-            "支持格式：\n" +
-            "1. 仅卡号：4111111111111111\n" +
-            "2. 卡号+日期：4111111111111111|12|25\n" +
-            "3. 卡号+日期+CVV：4111111111111111|12|25|123\n" +
-            "4. 完整信息：4111111111111111|12|25|123|......\n\n" +
-            "支持主流卡组织：Visa、Mastercard、Amex、Discover、JCB、UnionPay等"
-          }
+          placeholder={t("bin.inputPlaceholder")}
           className="min-h-[300px] font-mono text-sm resize-none border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 bg-white/80 backdrop-blur-sm"
           rows={12}
         />
         
         <div className="flex items-center justify-between mt-4">
           <div className="text-sm text-gray-500">
-            <span>已输入 {cardCount} 条记录</span>
-            {cardCount > 0 && <span className="ml-4 text-blue-600">支持批量处理</span>}
+            <span>{t("bin.inputRecords").replace("{count}", cardCount.toString())}</span>
+            {cardCount > 0 && <span className="ml-4 text-blue-600">{t("bin.batchProcessing")}</span>}
           </div>
           
           <Button
@@ -58,12 +54,12 @@ export function CardInput({ cardInput, setCardInput, onQuery, isProcessing }: Ca
             {isProcessing ? (
               <div className="flex items-center gap-2">
                 <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                查询中...
+                {t("bin.querying")}
               </div>
             ) : (
               <div className="flex items-center gap-2">
                 <Search className="w-4 h-4" />
-                查询卡片信息
+                {t("bin.queryButton")}
               </div>
             )}
           </Button>

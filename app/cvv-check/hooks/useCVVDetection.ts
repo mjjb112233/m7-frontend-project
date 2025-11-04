@@ -21,7 +21,7 @@ export function useCVVDetection() {
   
   // 主要状态
   const [currentStep, setCurrentStep] = useState<CVVStep>("config")
-  const [userDetectionStatus, setUserDetectionStatus] = useState<UserDetectionStatus>("not_detected")
+  const [userDetectionStatus, setUserDetectionStatus] = useState<UserDetectionStatus>("idle")
   // detectionConfig 已移除，由 ConfigStepV2 组件自主管理
   const [detectionProgressData, setDetectionProgressData] = useState<DetectionProgressData | null>(null)
   const [detectionResultData, setDetectionResultData] = useState<DetectionResultData | null>(null)
@@ -41,7 +41,6 @@ export function useCVVDetection() {
     invalidCount: 0,
     unknownCount: 0,
     isRunning: false,
-    detectingCVVs: [],
   })
   
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({

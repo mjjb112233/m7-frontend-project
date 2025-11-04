@@ -1,3 +1,5 @@
+"use client"
+
 import React, { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -5,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Copy, Download, X, Loader2 } from "lucide-react"
 import { GroupedResult, CardInfo } from "../types"
 import { VirtualizedCardList } from "./VirtualizedCardList"
+import { useLanguage } from "@/contexts/language-context"
 
 interface GroupedResultsProps {
   groupedResults: GroupedResult
@@ -28,6 +31,7 @@ export function GroupedResults({
   getCategoryLabel,
   isFiltering = false
 }: GroupedResultsProps) {
+  const { t } = useLanguage()
   const [selectedGroup, setSelectedGroup] = useState<{name: string, cards: CardInfo[]} | null>(null)
   const totalCards = Object.values(groupedResults).reduce((sum, cards) => sum + cards.length, 0)
   const groupCount = Object.keys(groupedResults).length
@@ -49,19 +53,19 @@ export function GroupedResults({
     <>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-4">
-          <h2 className="text-xl font-bold text-gray-900">按 {getCategoryLabel(selectedCategory)} 分类结果</h2>
+          <h2 className="text-xl font-bold text-gray-900">{t("bin.results.classifiedBy").replace("{category}", getCategoryLabel(selectedCategory))}</h2>
           <Badge variant="secondary" className="bg-purple-50 text-purple-700 border-purple-200 px-3 py-1">
-            {groupCount} 个分组
+            {t("bin.results.groups").replace("{count}", groupCount.toString())}
           </Badge>
           {isFiltering && (
             <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 animate-pulse">
               <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-              筛选中...
+              {t("bin.results.filtering")}
             </Badge>
           )}
           {selectedGroup && (
             <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
-              已选择: {selectedGroup.name} ({selectedGroup.cards.length}张卡)
+              {t("bin.results.selected").replace("{name}", selectedGroup.name).replace("{count}", selectedGroup.cards.length.toString())}
             </Badge>
           )}
         </div>
@@ -74,7 +78,7 @@ export function GroupedResults({
               onClick={clearSelection}
               className="bg-white/80 backdrop-blur-sm hover:shadow-md transition-all duration-300 hover:scale-105"
             >
-              清除选择
+              {t("bin.results.clearSelection")}
             </Button>
           )}
           <Button
@@ -84,7 +88,7 @@ export function GroupedResults({
             className="bg-white/80 backdrop-blur-sm hover:shadow-md transition-all duration-300 hover:scale-105"
           >
             <Download className="w-4 h-4 mr-2" />
-            导出数据
+            {t("bin.results.exportData")}
           </Button>
         </div>
       </div>

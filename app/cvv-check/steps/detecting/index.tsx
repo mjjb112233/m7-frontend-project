@@ -6,7 +6,8 @@ import { Progress } from "@/components/ui/progress"
 import { Zap, Square, TrendingUp } from "lucide-react"
 import { useLanguage } from "@/contexts/language-context"
 import { useCVVCheckAPI } from "@/lib/api"
-import { DetectionStatus, ConnectionStatus, Channel } from "../../types"
+import { getCVVCheckConfig } from "@/lib/config/index"
+import { DetectionStatus, ConnectionStatus, Channel, DetectionProgressResponse } from "../../types"
 
 interface DetectingStepProps {
   localDetectionUuid: string
@@ -24,6 +25,11 @@ export function DetectingStep({
   const { t } = useLanguage()
   const api = useCVVCheckAPI()
 
+  // 获取配置
+  const cvvConfig = getCVVCheckConfig()
+  const progressPollInterval = cvvConfig.detectionProgressPollInterval * 1000 // 转换为毫秒
+  const cancelStatusPollInterval = cvvConfig.cancelStatusPollInterval * 1000 // 转换为毫秒
+
   // 组件内部状态管理
   const [detectionStatus, setDetectionStatus] = useState<DetectionStatus>({
     currentCVV: "",
@@ -33,15 +39,13 @@ export function DetectingStep({
     invalidCount: 0,
     unknownCount: 0,
     isRunning: true,
-    detectingCVVs: []
   })
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
     backend: "connected",
     frontend: "connected",
     lastHeartbeat: null
   })
-  const [detectionProgress, setDetectionProgress] = useState<any>(null)
-  const [checkData, setCheckData] = useState<any[]>([])
+  const [detectionProgress, setDetectionProgress] = useState<DetectionProgressResponse | null>(null)
   const [isDetectingPageLoading, setIsDetectingPageLoading] = useState(true)
   const [isStoppingDetection, setIsStoppingDetection] = useState(false)
   const [stopButtonDisabled, setStopButtonDisabled] = useState(false)
@@ -49,20 +53,10 @@ export function DetectingStep({
   const [stopAlertData, setStopAlertData] = useState<any>(null)
   const [showStopSuccessAlert, setShowStopSuccessAlert] = useState(false)
   const [showStopErrorAlert, setShowStopErrorAlert] = useState(false)
+  const [isWaitingForCancel, setIsWaitingForCancel] = useState(false) // 正在等待停止完成
   
   // 控制定时器的状态 - 只有在这个页面时才轮询
   const [shouldPoll, setShouldPoll] = useState(true)
-  
-  // 用于动态显示检测时间的状态
-  const [currentTime, setCurrentTime] = useState(Date.now())
-
-  // 计算检测时间间隔的函数
-  const calculateElapsedTime = (startTime: number) => {
-    const elapsed = Math.floor((currentTime - startTime * 1000) / 1000) // 转换为秒
-    const minutes = Math.floor(elapsed / 60)
-    const seconds = elapsed % 60
-    return `${minutes}:${seconds.toString().padStart(2, "0")}`
-  }
 
   // 停止检测逻辑
   const handleStopDetection = async () => {
@@ -77,45 +71,63 @@ export function DetectingStep({
       // 调用停止检测 API
       const result = await api.stopDetection(localDetectionUuid)
       
-      if (result && (result as any).success === true) {
-        console.log("[DetectingStep] Stop detection request successful, getting progress immediately")
+      if (result) {
+        console.log("[DetectingStep] Stop detection request successful, starting to poll cancel-status")
+        setIsWaitingForCancel(true)
+        setShouldPoll(false) // 停止进度轮询
         
-        // 立即发送检测进度请求
-        const progressResult = await api.fetchDetectionProgress(localDetectionUuid)
+        // 开始轮询 cancel-status 接口
+        const maxPollAttempts = 60 // 最大轮询次数（60秒，每次3秒）
+        let pollAttempts = 0
         
-        if (progressResult) {
-          console.log("[DetectingStep] 获取检测进度成功:", progressResult)
-          
-          // 根据检测进度响应控制跳转
-          const status = (progressResult as any).status
-          if (status === 'completed' || status === 'error') {
-            console.log("[DetectingStep] Detection stopped, notifying parent component to jump to results page")
-            setShouldPoll(false) // 停止轮询
-            onDetectionComplete() // 通知父组件跳转到结果页面
-          } else {
-            console.log("[DetectingStep] 检测仍在进行中，显示错误提示")
-            // 检测仍在进行，显示错误提示
-            setStopAlertData({ message: "停止检测请求已发送，但检测仍在进行中" })
-            setShowStopErrorAlert(true)
-            startStopButtonCountdown()
+        const pollCancelStatus = async (): Promise<void> => {
+          try {
+            const cancelStatus = await api.fetchCancelStatus(localDetectionUuid)
+            
+            if (cancelStatus) {
+              console.log("[DetectingStep] Cancel status:", cancelStatus)
+              
+              if (cancelStatus.status === 'completed') {
+                console.log("[DetectingStep] 停止完成，跳转到结果页面")
+                setIsWaitingForCancel(false)
+                onDetectionComplete() // 通知父组件跳转到结果页面
+                return
+              }
+            }
+            
+            // 如果未完成，继续轮询
+            pollAttempts++
+            if (pollAttempts >= maxPollAttempts) {
+              console.log("[DetectingStep] 轮询超时，直接跳转到结果页面")
+              setIsWaitingForCancel(false)
+              onDetectionComplete() // 超时后也跳转到结果页面
+              return
+            }
+            
+            // 继续下一次轮询
+            setTimeout(pollCancelStatus, cancelStatusPollInterval)
+          } catch (error) {
+            console.error("[DetectingStep] 轮询 cancel-status 失败:", error)
+            // 轮询出错时，也跳转到结果页面
+            setIsWaitingForCancel(false)
+            onDetectionComplete()
           }
-        } else {
-          console.log("[DetectingStep] 获取检测进度失败，显示停止成功提示")
-          setStopAlertData(result)
-          setShowStopSuccessAlert(true)
         }
+        
+        // 开始第一次轮询（延迟一点，给后端处理时间）
+        setTimeout(pollCancelStatus, cancelStatusPollInterval)
       } else {
         console.log("[DetectingStep] Stop detection failed, response:", result)
-        setStopAlertData({ message: (result as any)?.message || "Stop detection failed" })
+        setStopAlertData({ message: t("cvv.stopRequestFailed") })
         setShowStopErrorAlert(true)
         startStopButtonCountdown()
+        setIsStoppingDetection(false)
       }
     } catch (error) {
       console.error("[DetectingStep] 停止检测错误:", error)
-      setStopAlertData({ message: "网络错误，请稍后重试" })
+      setStopAlertData({ message: t("cvv.networkError") })
       setShowStopErrorAlert(true)
       startStopButtonCountdown()
-    } finally {
       setIsStoppingDetection(false)
     }
   }
@@ -146,53 +158,30 @@ export function DetectingStep({
       const result = await api.fetchDetectionProgress(localDetectionUuid)
       if (result) {
         console.log("[DetectingStep] 检测进度获取成功:", result)
-        setDetectionProgress(result)
+        const progressData = result as DetectionProgressResponse
+        setDetectionProgress(progressData)
         
-        const status = (result as any).status
+        const status = progressData.status
         
-        // 更新检测状态
+        // 更新检测状态 - 使用API响应中的字段名
         setDetectionStatus(prev => ({
           ...prev,
-          currentCVV: (result as any).currentCVV || "",
-          processedCount: (result as any).completedCVVs || 0, // 使用 completedCVVs 而不是 processedCount
-          totalCount: (result as any).totalCVVs || 100, // 使用 totalCVVs 而不是 totalCount
-          validCount: (result as any).validCount || 0,
-          invalidCount: (result as any).invalidCount || 0,
-          unknownCount: (result as any).unknownCount || 0,
+          currentCVV: "",
+          processedCount: progressData.processed || 0,
+          totalCount: progressData.total || 100,
+          validCount: progressData.validCount || 0,
+          invalidCount: progressData.invalidCount || 0,
+          unknownCount: progressData.unknownCount || 0,
           isRunning: status === 'detecting',
-          detectingCVVs: (result as any).detectingCVVs || []
         }))
 
-        // 更新检测数据
-        if ((result as any).checkData) {
-          setCheckData((result as any).checkData)
-        }
-
-        // 更新连接状态
-        if ((result as any).systemStatus) {
+        // 更新连接状态 - 使用新的API字段
+        if (progressData.serviceStatus && progressData.channelStatus) {
           setConnectionStatus({
-            backend: (result as any).systemStatus.detectionService === 'online' ? 'connected' : 'disconnected',
-            frontend: (result as any).systemStatus.channel === 'online' ? 'connected' : 'disconnected',
+            backend: progressData.serviceStatus === '在线' ? 'connected' : 'disconnected',
+            frontend: progressData.channelStatus === '在线' ? 'connected' : 'disconnected',
             lastHeartbeat: new Date()
           })
-        }
-
-        // 检查系统状态
-        const systemStatus = (result as any).systemStatus
-        if (systemStatus) {
-          const detectionService = systemStatus.detectionService
-          const channel = systemStatus.channel
-          
-          // 如果检测服务或通道停止，提示用户跳转到结果页面
-          if (detectionService !== 'running' || channel !== 'active') {
-            console.log("[DetectingStep] System status abnormal:", {
-              detectionService,
-              channel
-            })
-            setShouldPoll(false) // 停止轮询
-            onDetectionComplete() // 通知父组件跳转到结果页面
-            return
-          }
         }
 
         // 根据后端返回的状态判断是否跳转到结果页面
@@ -228,12 +217,12 @@ export function DetectingStep({
       return
     }
 
-    console.log("[DetectingStep] 启动定时器，开始轮询检测进度")
+    console.log("[DetectingStep] 启动定时器，开始轮询检测进度，间隔:", progressPollInterval, "ms")
     const interval = setInterval(() => {
       if (shouldPoll) {
         fetchDetectionProgress()
       }
-    }, 2000) // 每2秒获取一次进度
+    }, progressPollInterval) // 使用配置的轮询间隔
 
     return () => {
       console.log("[DetectingStep] 停止定时器")
@@ -241,16 +230,6 @@ export function DetectingStep({
     }
   }, [localDetectionUuid, shouldPoll])
 
-  // 定时更新当前时间，用于动态显示检测时间
-  useEffect(() => {
-    const timeInterval = setInterval(() => {
-      setCurrentTime(Date.now())
-    }, 1000) // 每秒更新一次
-
-    return () => {
-      clearInterval(timeInterval)
-    }
-  }, [])
 
   // 组件卸载时清理所有定时器和状态
   useEffect(() => {
@@ -276,8 +255,8 @@ export function DetectingStep({
         <CardContent className="p-8 text-center">
           <div className="flex flex-col items-center gap-4">
             <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
-            <div className="text-lg font-medium text-gray-700">正在获取检测进度...</div>
-            <div className="text-sm text-gray-500">请稍候，正在加载检测数据</div>
+            <div className="text-lg font-medium text-gray-700">{t("cvv.loadingProgress")}</div>
+            <div className="text-sm text-gray-500">{t("cvv.loadingProgressDesc")}</div>
           </div>
         </CardContent>
       </Card>
@@ -298,20 +277,18 @@ export function DetectingStep({
                 </div>
                 {t("cvv.detectionProgress")}
               </CardTitle>
-              <CardDescription className="text-sm text-gray-600">
-                {t("cvv.usingMode")}
-              </CardDescription>
             </div>
             {detectionStatus.isRunning && (
               <Button
                 onClick={handleStopDetection}
                 {...({ variant: "destructive", size: "sm" } as any)}
-                disabled={stopButtonDisabled || isStoppingDetection}
+                disabled={stopButtonDisabled || isStoppingDetection || isWaitingForCancel}
                 className="ml-4 transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Square className="h-4 w-4 mr-2" />
-                {isStoppingDetection ? "停止中..." : 
-                 stopButtonCountdown > 0 ? `重试 (${stopButtonCountdown}s)` : 
+                {isWaitingForCancel ? t("cvv.waitingForCancel") :
+                 isStoppingDetection ? t("cvv.stopping") : 
+                 stopButtonCountdown > 0 ? t("cvv.retryWithCountdown").replace("{count}", stopButtonCountdown.toString()) : 
                  t("cvv.stopDetection")}
               </Button>
             )}
@@ -329,22 +306,70 @@ export function DetectingStep({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
                 <span className="text-sm font-medium">{t("cvv.detectionService")}</span>
-                <Badge {...({ variant: connectionStatus.backend === "connected" ? "default" : "destructive" } as any)}>
-                  {connectionStatus.backend === "connected" ? t("cvv.statusOnline") : t("cvv.statusOffline")}
+                <Badge {...({ variant: detectionProgress?.serviceStatus === "在线" ? "default" : "destructive" } as any)}>
+                  {detectionProgress?.serviceStatus || t("cvv.statusOffline")}
                 </Badge>
               </div>
               <div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
                 <span className="text-sm font-medium">{t("cvv.channelStatus")}</span>
-                <Badge {...({ variant: selectedChannel?.status === "online" ? "default" : "secondary" } as any)}>
-                  {selectedChannel?.status === "online" ? t("cvv.statusOnline") : t("cvv.statusBusy")}
+                <Badge {...(() => {
+                  const channelStatus = detectionProgress?.channelStatus || ""
+                  if (channelStatus === "在线") {
+                    return { variant: "default" } as any
+                  } else if (channelStatus === "拥挤") {
+                    return { variant: "secondary" } as any
+                  } else if (channelStatus === "繁忙") {
+                    return { variant: "destructive" } as any
+                  } else {
+                    return { variant: "destructive" } as any
+                  }
+                })()}>
+                  {detectionProgress?.channelStatus === "在线" ? t("cvv.statusOnline") :
+                   detectionProgress?.channelStatus === "拥挤" ? t("cvv.statusCrowded") :
+                   detectionProgress?.channelStatus === "繁忙" ? t("cvv.statusBusy") :
+                   t("cvv.statusOffline")}
                 </Badge>
               </div>
               <div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
-                <span className="text-sm font-medium">同时检测用户</span>
-                <Badge {...({ variant: "default" } as any)}>{detectionProgress?.systemStatus?.concurrentUsers || 0} 人</Badge>
+                <span className="text-sm font-medium">{t("cvv.channelUsers")}</span>
+                <Badge {...({ variant: "default" } as any)}>{detectionProgress?.channelUserCount || 0} {t("cvv.people")}</Badge>
               </div>
             </div>
           </div>
+
+          {/* 通道信息区域 */}
+          {detectionProgress?.channelId && (
+            <div className="space-y-4">
+              <div className="text-sm font-medium text-gray-900 flex items-center gap-2">
+                <div className="w-4 h-4 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
+                  <TrendingUp className="h-3 w-3 text-white" />
+                </div>
+                {t("cvv.channelInfo")}
+              </div>
+              <div className="bg-white rounded-lg p-4 shadow-sm border border-gray-200">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="space-y-1">
+                    <div className="text-xs text-gray-500">{t("cvv.channelIdLabel")}</div>
+                    <div className="text-sm font-medium text-gray-900">{t("cvv.channel")}{detectionProgress.channelId}</div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-xs text-gray-500">{t("cvv.consumptionLabel")}</div>
+                    <div className="text-sm font-medium text-indigo-600">
+                      {detectionProgress.channelRate?.toFixed(4) || "0.0000"} {t("cvv.mCoins")}
+                    </div>
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-xs text-gray-500">{t("cvv.speedLabel")}</div>
+                    <div className="text-sm font-medium text-gray-900">{detectionProgress.channelSpeed || "-"}</div>
+                  </div>
+                  <div className="space-y-1 md:col-span-2 md:col-start-1">
+                    <div className="text-xs text-gray-500">{t("cvv.description")}</div>
+                    <div className="text-sm text-gray-700">{detectionProgress.channelDescription || "-"}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* 检测进度区域 */}
 
@@ -361,69 +386,50 @@ export function DetectingStep({
             />
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="text-center p-4 bg-white rounded-lg border shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
-              <div className="text-2xl font-bold text-green-600">{detectionStatus.validCount}</div>
-              <div className="text-sm text-green-700 font-medium">{t("cvv.valid")}</div>
-            </div>
-            <div className="text-center p-4 bg-white rounded-lg border shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
-              <div className="text-2xl font-bold text-red-600">{detectionStatus.invalidCount}</div>
-              <div className="text-sm text-red-700 font-medium">{t("cvv.invalid")}</div>
-            </div>
-            <div className="text-center p-4 bg-white rounded-lg border shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
-              <div className="text-2xl font-bold text-yellow-600">{detectionStatus.unknownCount}</div>
-              <div className="text-sm text-yellow-700 font-medium">{t("cvv.unknown")}</div>
-            </div>
-            <div className="text-center p-4 bg-white rounded-lg border shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
-              <div className="text-2xl font-bold text-blue-600">
-                {detectionProgress?.consumedMCoins || "0.0"}
+          <div className="grid grid-cols-4 gap-4">
+            {/* 第一组：有效、无效、未知 - 用装饰条容器包裹，占3列 */}
+            <div className="relative overflow-hidden border border-blue-200 bg-blue-50/80 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 col-span-3">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-200/30 to-indigo-200/30 rounded-full -translate-y-10 translate-x-10"></div>
+              <div className="relative p-4">
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="text-center p-3 bg-white rounded-lg border shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
+                    <div className="text-2xl font-bold text-green-600">{detectionStatus.validCount}</div>
+                    <div className="text-sm text-green-700 font-medium">{t("cvv.valid")}</div>
+                  </div>
+                  <div className="text-center p-3 bg-white rounded-lg border shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
+                    <div className="text-2xl font-bold text-red-600">{detectionStatus.invalidCount}</div>
+                    <div className="text-sm text-red-700 font-medium">{t("cvv.invalid")}</div>
+                  </div>
+                  <div className="text-center p-3 bg-white rounded-lg border shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
+                    <div className="text-2xl font-bold text-yellow-600">{detectionStatus.unknownCount}</div>
+                    <div className="text-sm text-yellow-700 font-medium">{t("cvv.unknown")}</div>
+                  </div>
+                </div>
               </div>
-              <div className="text-sm text-blue-700 font-medium">{t("cvv.consumedMCoin")}</div>
+            </div>
+
+            {/* 已消耗M币 - 用装饰条容器包裹，占1列 */}
+            <div className="relative overflow-hidden border border-blue-200 bg-blue-50/80 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 col-span-1">
+              <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-200/30 to-cyan-200/30 rounded-full -translate-y-10 translate-x-10"></div>
+              <div className="relative p-4">
+                <div className="text-center p-4 bg-white rounded-lg border shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {detectionProgress?.totalConsumed?.toFixed(2) || "0.00"}
+                  </div>
+                  <div className="text-sm text-blue-700 font-medium">{t("cvv.consumedMCoin")}</div>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* 检测数据展示 */}
-          {checkData.length > 0 && (
-            <div className="space-y-4">
-              <div className="text-sm font-medium text-gray-900 flex items-center gap-2">
-                <div className="w-4 h-4 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
-                  <Zap className="h-3 w-3 text-white" />
+          {/* 等待停止完成提示 */}
+          {isWaitingForCancel && (
+            <div className="p-4 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg shadow-sm">
+              <div className="flex items-center gap-2 text-amber-800">
+                <div className="w-5 h-5 bg-gradient-to-br from-amber-500 to-orange-500 rounded-lg flex items-center justify-center">
+                  <Zap className="h-3 w-3 text-white animate-pulse" />
                 </div>
-                正在检测的卡片
-              </div>
-              <div className="space-y-3 max-h-48 overflow-y-auto">
-                {checkData
-                  .sort((a: any, b: any) => {
-                    // 按检测时间间隔从短到长排序
-                    const timeA = currentTime - a.startTime * 1000
-                    const timeB = currentTime - b.startTime * 1000
-                    return timeA - timeB
-                  })
-                  .map((item: any, index: number) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-4 bg-white rounded-lg border shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden"
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className="font-mono text-sm font-bold text-blue-600">{item.cardNumber}</span>
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
-                        <div
-                          className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"
-                          style={{ animationDelay: "0.1s" }}
-                        ></div>
-                        <div
-                          className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"
-                          style={{ animationDelay: "0.2s" }}
-                        ></div>
-                        <div className="text-xs text-gray-500">Detecting</div>
-                      </div>
-                    </div>
-                    <div className="text-sm text-gray-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
-                      {calculateElapsedTime(item.startTime)}
-                    </div>
-                  </div>
-                ))}
+                <span className="text-sm font-medium">{t("cvv.waitingForCancel")}</span>
               </div>
             </div>
           )}

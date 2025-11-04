@@ -1,3 +1,5 @@
+"use client"
+
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"

@@ -91,6 +91,12 @@ temp/
 backup/
 *.backup
 *.bak
+*_backup.*
+*_backup.tsx
+*_backup.ts
 
 # Stagewise
 .stagewise/
+
+# Build artifacts
+tsconfig.tsbuildinfo

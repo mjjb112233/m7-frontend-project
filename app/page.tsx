@@ -14,19 +14,17 @@ import {
   Lock,
 } from "lucide-react"
 import Header from "@/components/layout/header"
-import { useState, useEffect, createContext, useContext } from "react"
+import { useState, useEffect } from "react"
 import { useLanguage } from "@/contexts/language-context"
 import Link from "next/link"
 
 export default function HomePage() {
   const [isVisible, setIsVisible] = useState(false)
-  const { t } = useLanguage()
-
+  const { t, language } = useLanguage()
 
   useEffect(() => {
     setIsVisible(true)
   }, [])
-
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -46,7 +44,10 @@ export default function HomePage() {
           </div>
 
           <h1
-            className={`text-6xl md:text-7xl font-bold text-gray-900 mb-6 text-balance transition-all duration-1000 delay-200 ${isVisible ? "animate-slide-up" : "opacity-0"}`}
+            className={`font-logo text-6xl md:text-7xl font-normal text-gray-900 mb-6 text-balance transition-all duration-1000 delay-200 ${isVisible ? "animate-slide-up" : "opacity-0"}`}
+            style={{
+              fontWeight: 700,
+            }}
           >
             {t("home.title")}
             <br />
@@ -78,7 +79,6 @@ export default function HomePage() {
             </Link>
           </div>
 
-
           {/* Floating Card Animation */}
           <div className="relative max-w-md mx-auto">
             <div className="animate-float">
@@ -91,7 +91,7 @@ export default function HomePage() {
                   <div className="text-left">
                     <div className="text-2xl font-mono font-bold mb-2">4532 **** **** 1234</div>
                     <div className="text-sm text-gray-600 mb-1">
-                      VISA • {t("language.chinese") === "中文" ? "美国" : "USA"}
+                      VISA • {language === "zh" ? "美国" : "USA"}
                     </div>
                     <div className="text-sm text-gray-500">{t("home.detectionTime")}</div>
                   </div>
@@ -107,19 +107,19 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             <div className="space-y-2">
-              <div className="text-3xl font-bold text-gray-900">99.9%</div>
+              <div className="text-3xl font-bold text-gray-900">{t("home.stats.accuracyValue")}</div>
               <div className="text-sm text-gray-600">{t("home.stats.accuracy")}</div>
             </div>
             <div className="space-y-2">
-              <div className="text-3xl font-bold text-gray-900">50万+</div>
+              <div className="text-3xl font-bold text-gray-900">{t("home.stats.dailyChecksValue")}</div>
               <div className="text-sm text-gray-600">{t("home.stats.dailyChecks")}</div>
             </div>
             <div className="space-y-2">
-              <div className="text-3xl font-bold text-gray-900">0.1秒</div>
+              <div className="text-3xl font-bold text-gray-900">{t("home.stats.responseTimeValue")}</div>
               <div className="text-sm text-gray-600">{t("home.stats.responseTime")}</div>
             </div>
             <div className="space-y-2">
-              <div className="text-3xl font-bold text-gray-900">24/7</div>
+              <div className="text-3xl font-bold text-gray-900">{t("home.stats.serviceValue")}</div>
               <div className="text-sm text-gray-600">{t("home.stats.service")}</div>
             </div>
           </div>
@@ -237,33 +237,6 @@ export default function HomePage() {
       {/* CTA Section */}
       <section className="py-20 px-6 bg-gradient-to-br from-slate-50 to-slate-100 border-t border-slate-200">
         <div className="max-w-6xl mx-auto">
-          {/* CTA 内容区域 */}
-          <div className="text-center mb-12">
-            <h2 className="text-4xl font-bold text-gray-900 mb-6">{t("home.ctaTitle")}</h2>
-            <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">{t("home.ctaSubtitle")}</p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/bin-classify">
-                <Button className="bg-black text-white hover:bg-gray-800 rounded-full px-8 py-4 text-lg">
-                  <CreditCard className="w-5 h-5 mr-2" />
-                  {t("home.freeTrial")}
-                </Button>
-              </Link>
-              <Button
-                variant="outline"
-                className="rounded-full px-8 py-4 text-lg bg-white/80 backdrop-blur-sm"
-                onClick={() => {
-                  // @ts-ignore
-                  if (window.openCustomerService) {
-                    // @ts-ignore
-                    window.openCustomerService()
-                  }
-                }}
-              >
-                {t("home.contactSupport")}
-              </Button>
-            </div>
-          </div>
-
           {/* 底部信息区域 - 参考其他页面底部设计 */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-6">
             {/* 品牌信息 */}
@@ -272,10 +245,10 @@ export default function HomePage() {
                 <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
                   <CreditCard className="h-3 w-3 text-white" />
                 </div>
-                <h3 className="font-bold text-gray-900">专业银行卡服务</h3>
+                <h3 className="font-bold text-gray-900">{t("home.footer.brandTitle")}</h3>
               </div>
               <p className="text-sm text-gray-600 leading-relaxed">
-                提供全方位的银行卡检测和分析服务，包括BIN分类、CVV验证、实时查询等专业功能。
+                {t("home.footer.brandDesc")}
               </p>
             </div>
 
@@ -283,24 +256,24 @@ export default function HomePage() {
             <div className="space-y-3">
               <h4 className="font-semibold text-gray-900 flex items-center gap-2">
                 <Shield className="h-4 w-4 text-blue-600" />
-                核心服务
+                {t("home.footer.coreServices")}
               </h4>
               <ul className="space-y-2 text-sm text-gray-600">
                 <li className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                  BIN智能分类
+                  {t("home.footer.binClassify")}
                 </li>
                 <li className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                  CVV实时验证
+                  {t("home.footer.cvvVerification")}
                 </li>
                 <li className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                  批量数据处理
+                  {t("home.footer.batchProcessing")}
                 </li>
                 <li className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
-                  实时状态监控
+                  {t("home.footer.statusMonitoring")}
                 </li>
               </ul>
             </div>
@@ -309,27 +282,27 @@ export default function HomePage() {
             <div className="space-y-3">
               <h4 className="font-semibold text-gray-900 flex items-center gap-2">
                 <Zap className="h-4 w-4 text-blue-600" />
-                服务优势
+                {t("home.footer.advantages")}
               </h4>
               <div className="flex flex-wrap gap-2">
                 <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
-                  高准确率
+                  {t("home.footer.highAccuracy")}
                 </Badge>
                 <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
-                  快速响应
+                  {t("home.footer.fastResponse")}
                 </Badge>
                 <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 text-xs">
-                  安全可靠
+                  {t("home.footer.secureReliable")}
                 </Badge>
                 <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 text-xs">
-                  24/7服务
+                  {t("home.footer.service247")}
                 </Badge>
                 <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200 text-xs">
-                  全球支持
+                  {t("home.footer.globalSupport")}
                 </Badge>
               </div>
               <p className="text-xs text-gray-500 mt-2">
-                覆盖全球主要银行和卡组织，支持多种检测模式
+                {t("home.footer.advantagesDesc")}
               </p>
             </div>
           </div>
@@ -339,15 +312,15 @@ export default function HomePage() {
           {/* 底部版权信息 */}
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="text-sm text-gray-500">
-              © 2025 专业银行卡检测平台. 保留所有权利.
+              {t("home.footer.copyright")}
             </div>
             <div className="flex items-center gap-4 text-xs text-gray-400">
-              <span>服务状态: 正常运行</span>
+              <span>{t("home.footer.serviceStatus")}</span>
               <span>•</span>
-              <span>数据更新: 实时同步</span>
+              <span>{t("home.footer.dataUpdate")}</span>
               <span>•</span>
               <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200 text-xs">
-                在线
+                {t("home.footer.online")}
               </Badge>
             </div>
           </div>

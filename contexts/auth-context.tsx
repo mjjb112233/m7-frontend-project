@@ -11,6 +11,7 @@ interface User {
   avatarStyle?: string // DiceBear avatar style
   mCoins: number
   level: number // Added user level field
+  language?: string // 用户语言设置
 }
 
 interface AuthContextType {

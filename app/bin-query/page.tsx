@@ -12,6 +12,7 @@ import { Search, CreditCard, Building, Globe, Phone, ExternalLink, AlertCircle, 
 import { useAuth } from "@/contexts/auth-context"
 import { useBINQuery, type BINQueryResult } from "@/lib/api/bin-query"
 import BINUnifiedCard from "@/components/business/bin-unified-card"
+import { useLanguage } from "@/contexts/language-context"
 
 export default function BINQueryPage() {
   return (
@@ -22,6 +23,7 @@ export default function BINQueryPage() {
 }
 
 function BINQueryContent() {
+  const { t } = useLanguage()
   const { token } = useAuth()
   const { isLoading, error, queryBIN } = useBINQuery()
   const [binInput, setBinInput] = useState("")
@@ -33,13 +35,13 @@ function BINQueryContent() {
 
   const handleQuery = async () => {
     if (!token) {
-      setErrorMessage("请先登录")
+      setErrorMessage(t("login.loginRequired") || "请先登录")
       setShowError(true)
       return
     }
 
     if (!binInput.trim()) {
-      setErrorMessage("请输入BIN码")
+      setErrorMessage(t("binQuery.binPlaceholder") || "请输入BIN码")
       setShowError(true)
       return
     }
@@ -47,7 +49,7 @@ function BINQueryContent() {
     // 验证BIN码格式（通常是6-8位数字）
     const binPattern = /^\d{6,8}$/
     if (!binPattern.test(binInput.trim())) {
-      setErrorMessage("BIN码格式不正确，请输入6-8位数字")
+      setErrorMessage(t("binQuery.binPlaceholder") || "BIN码格式不正确，请输入6-8位数字")
       setShowError(true)
       return
     }
@@ -93,9 +95,9 @@ function BINQueryContent() {
             <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center shadow-lg">
               <Search className="h-4 w-4 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">BIN 查询系统</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{t("binQuery.title")}</h1>
           </div>
-          <p className="text-sm text-gray-600 max-w-xl mx-auto">输入银行卡BIN码查询详细的卡片信息</p>
+          <p className="text-sm text-gray-600 max-w-xl mx-auto">{t("binQuery.description")}</p>
         </div>
 
         {/* 输入区域 */}
@@ -108,18 +110,18 @@ function BINQueryContent() {
                 <div className="w-6 h-6 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center shadow-lg">
                   <Search className="h-4 w-4 text-white" />
                 </div>
-                BIN码查询
+                {t("binQuery.queryTab")}
               </CardTitle>
             </CardHeader>
             <CardContent className="relative space-y-4 p-4">
               <div>
-                <label className="block text-sm font-medium text-gray-900 mb-2">输入BIN码</label>
+                <label className="block text-sm font-medium text-gray-900 mb-2">{t("binQuery.binInputLabel")}</label>
                 <div className="flex gap-2">
                   <Input
                     value={binInput}
                     onChange={(e) => setBinInput(e.target.value)}
                     onKeyPress={handleInputKeyPress}
-                    placeholder="请输入6-8位BIN码，例如：412345"
+                    placeholder={t("binQuery.binPlaceholder")}
                     className="font-mono text-sm border-gray-200 focus:border-green-500 focus:ring-2 focus:ring-green-200 transition-all duration-200 bg-white/80 backdrop-blur-sm"
                     maxLength={8}
                   />
@@ -131,12 +133,12 @@ function BINQueryContent() {
                     {isLoading ? (
                       <div className="flex items-center gap-2">
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        查询中
+                        {t("binQuery.querying")}
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
                         <Search className="w-4 h-4" />
-                        查询
+                        {t("binQuery.queryButton")}
                       </div>
                     )}
                   </Button>
@@ -144,9 +146,9 @@ function BINQueryContent() {
               </div>
 
               <div className="text-sm text-gray-500 bg-white/80 backdrop-blur-sm p-3 rounded-lg border border-gray-200 shadow-sm">
-                <p>• BIN码是银行识别码，通常是卡号前6-8位数字</p>
-                <p>• 可以查询卡片类型、品牌、发卡行等详细信息</p>
-                <p>• 支持Visa、MasterCard、American Express等主流卡片</p>
+                <p>{t("binQuery.tip1")}</p>
+                <p>{t("binQuery.tip2")}</p>
+                <p>{t("binQuery.tip3")}</p>
               </div>
               <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-green-500 to-emerald-500"></div>
             </CardContent>

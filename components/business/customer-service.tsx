@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { MessageCircle, X, Send, Settings, Bell, BellOff, Bot, User } from "lucide-react"
+import { useLanguage } from "@/contexts/language-context"
 
 
 
@@ -70,17 +71,18 @@ interface CustomerServiceProps {
 }
 
 export function CustomerService({ onOpenChange }: CustomerServiceProps = {}) {
+  const { t } = useLanguage()
   const [showBubble, setShowBubble] = useState(false)
   
   const [currentMessageIndex, setCurrentMessageIndex] = useState(0)
   
   // 对话泡泡的消息列表
   const bubbleMessages = [
-    "有问题请跟我对话！",
-    "需要帮助吗？我在这里！",
-    "遇到困难？点击我聊聊！",
-    "我可以帮您解决问题！",
-    "有疑问随时找我哦～"
+    t("customerService.bubbleMessage1"),
+    t("customerService.bubbleMessage2"),
+    t("customerService.bubbleMessage3"),
+    t("customerService.bubbleMessage4"),
+    t("customerService.bubbleMessage5")
   ]
 
 
@@ -161,7 +163,7 @@ export function CustomerService({ onOpenChange }: CustomerServiceProps = {}) {
           
           {/* 悬停提示 - 优化定位 */}
           <div className="absolute -top-14 right-0 sm:-top-16 sm:-left-10 bg-gray-800 text-white px-3 py-1 rounded-lg text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-30 max-w-[120px] sm:max-w-none">
-            <span className="break-words">点击和我聊天！</span>
+            <span className="break-words">{t("customerService.hoverTooltip")}</span>
             <div className="absolute bottom-0 right-4 sm:left-6 transform translate-y-1/2 rotate-45 w-2 h-2 bg-gray-800"></div>
           </div>
         </div>

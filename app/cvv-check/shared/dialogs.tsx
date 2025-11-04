@@ -3,12 +3,13 @@
 import React from "react"
 import { Button } from "@/components/ui/button"
 import { CheckCircle, XCircle, Shield, AlertTriangle, Info, X } from "lucide-react"
+import { useLanguage } from "@/contexts/language-context"
 
 interface StatusAlertProps {
   show: boolean
   type: "info" | "warning" | "success"
   message: string
-  userDetectionStatus: "not_detected" | "detecting" | "completed"
+  userDetectionStatus: "idle" | "detecting" | "completed"
   onView: () => void
   onDismiss: () => void
 }
@@ -21,6 +22,7 @@ export function StatusAlert({
   onView,
   onDismiss
 }: StatusAlertProps) {
+  const { t } = useLanguage()
   if (!show) return null
 
   return (
@@ -38,8 +40,8 @@ export function StatusAlert({
             )}
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            {type === 'success' ? 'Detection Completed' : 
-             type === 'warning' ? 'Detection In Progress' : 'Status Alert'}
+            {type === 'success' ? t("cvv.detectionCompleted") : 
+             type === 'warning' ? t("cvv.detectionInProgress") : t("cvv.statusAlert")}
           </h3>
           <p className="text-gray-600 mb-6">{message}</p>
           <div className="flex gap-3 justify-center">
@@ -48,13 +50,13 @@ export function StatusAlert({
               {...({ variant: "outline" } as any)}
               className="px-6 bg-white hover:bg-gray-50 transition-all duration-300 hover:scale-105 shadow-lg"
             >
-              取消
+              {t("cvv.cancel")}
             </Button>
             <Button
               onClick={onView}
               className="px-6 bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600 transition-all duration-300 hover:scale-105 shadow-lg"
             >
-              {userDetectionStatus === 'detecting' ? '查看进度' : '查看结果'}
+              {userDetectionStatus === 'detecting' ? t("cvv.viewProgress") : t("cvv.viewResults")}
             </Button>
           </div>
         </div>
@@ -82,6 +84,7 @@ export function ErrorAlert({
   onRetry,
   onDismiss
 }: ErrorAlertProps) {
+  const { t } = useLanguage()
   if (!show) return null
 
   return (
@@ -93,9 +96,9 @@ export function ErrorAlert({
             <XCircle className="h-6 w-6 text-white" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            {errorType === 'insufficient_coins' ? 'Insufficient M-Coins' : 
-             errorType === 'service_down' ? 'Service Unavailable' : 
-             errorType === 'server_error' ? 'Server Error' : 'Detection Failed'}
+            {errorType === 'insufficient_coins' ? t("cvv.insufficientMCoins") : 
+             errorType === 'service_down' ? t("cvv.serviceUnavailable") : 
+             errorType === 'server_error' ? t("cvv.serverError") : t("cvv.detectionFailed")}
           </h3>
           <p className="text-gray-600 mb-4">{errorMessage}</p>
           
@@ -103,9 +106,9 @@ export function ErrorAlert({
           {errorType === 'insufficient_coins' && errorData && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4 text-sm">
               <p className="text-yellow-800">
-                需要: {errorData.required} M币<br/>
-                当前: {errorData.current} M币<br/>
-                缺少: {errorData.shortage} M币
+                {t("cvv.required")}: {errorData.required} {t("cvv.mCoins")}<br/>
+                {t("cvv.current")}: {errorData.current} {t("cvv.mCoins")}<br/>
+                {t("cvv.shortage")}: {errorData.shortage} {t("cvv.mCoins")}
               </p>
             </div>
           )}
@@ -118,13 +121,13 @@ export function ErrorAlert({
                   {...({ variant: "outline" } as any)}
                   className="px-6 bg-white hover:bg-gray-50 transition-all duration-300 hover:scale-105 shadow-lg"
                 >
-                  返回
+                  {t("cvv.back")}
                 </Button>
                 <Button
                   onClick={onRecharge}
                   className="px-6 bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600 transition-all duration-300 hover:scale-105 shadow-lg"
                 >
-                  去充值
+                  {t("cvv.goToRecharge")}
                 </Button>
               </>
             ) : (
@@ -134,13 +137,13 @@ export function ErrorAlert({
                   {...({ variant: "outline" } as any)}
                   className="px-6 bg-white hover:bg-gray-50 transition-all duration-300 hover:scale-105 shadow-lg"
                 >
-                  返回
+                  {t("cvv.back")}
                 </Button>
                 <Button
                   onClick={onRetry}
                   className="px-6 bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600 transition-all duration-300 hover:scale-105 shadow-lg"
                 >
-                  重试
+                  {t("cvv.retry")}
                 </Button>
               </>
             )}
@@ -164,6 +167,7 @@ export function SystemErrorAlert({
   onViewResults,
   onDismiss
 }: SystemErrorAlertProps) {
+  const { t } = useLanguage()
   if (!show) return null
 
   return (
@@ -175,7 +179,7 @@ export function SystemErrorAlert({
             <XCircle className="h-6 w-6 text-white" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            System Status Abnormal
+            {t("cvv.systemStatusAbnormal")}
           </h3>
           <p className="text-gray-600 mb-6">{message}</p>
           <div className="flex gap-3 justify-center">
@@ -184,13 +188,13 @@ export function SystemErrorAlert({
               {...({ variant: "outline" } as any)}
               className="px-6 bg-white hover:bg-gray-50 transition-all duration-300 hover:scale-105 shadow-lg"
             >
-              返回
+              {t("cvv.back")}
             </Button>
             <Button
               onClick={onViewResults}
               className="px-6 bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600 transition-all duration-300 hover:scale-105 shadow-lg"
             >
-              查看结果
+              {t("cvv.viewResults")}
             </Button>
           </div>
         </div>
@@ -210,6 +214,7 @@ export function StopSuccessAlert({
   stopAlertData,
   onViewResults
 }: StopSuccessAlertProps) {
+  const { t } = useLanguage()
   if (!show || !stopAlertData) return null
 
   return (
@@ -221,25 +226,25 @@ export function StopSuccessAlert({
             <CheckCircle className="h-6 w-6 text-white" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Detection Stopped
+            {t("cvv.detectionStopped")}
           </h3>
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-sm">
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-blue-800 font-medium">本次检测任务:</span>
-                <span className="text-blue-900 font-semibold">Completed</span>
+                <span className="text-blue-800 font-medium">{t("cvv.thisDetectionTask")}:</span>
+                <span className="text-blue-900 font-semibold">{t("cvv.completed")}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-blue-800 font-medium">实际检测条数:</span>
-                <span className="text-blue-900 font-semibold">{stopAlertData.actualDetected || 0} 条</span>
+                <span className="text-blue-800 font-medium">{t("cvv.actualDetected")}:</span>
+                <span className="text-blue-900 font-semibold">{stopAlertData.actualDetected || 0} {t("cvv.records")}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-blue-800 font-medium">总CVV数量:</span>
-                <span className="text-blue-900 font-semibold">{stopAlertData.totalCVVs || 0} 条</span>
+                <span className="text-blue-800 font-medium">{t("cvv.totalCVVCount")}:</span>
+                <span className="text-blue-900 font-semibold">{stopAlertData.totalCVVs || 0} {t("cvv.records")}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-blue-800 font-medium">共消耗M币:</span>
-                <span className="text-blue-900 font-semibold">{stopAlertData.consumption?.toFixed(2) || '0.00'} M币</span>
+                <span className="text-blue-800 font-medium">{t("cvv.totalConsumedMCoins")}:</span>
+                <span className="text-blue-900 font-semibold">{stopAlertData.consumption?.toFixed(2) || '0.00'} {t("cvv.mCoins")}</span>
               </div>
             </div>
           </div>
@@ -249,7 +254,7 @@ export function StopSuccessAlert({
               {...({ size: "lg" } as any)}
               className="px-8 bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600 transition-all duration-300 hover:scale-105 shadow-lg"
             >
-              查看检测结果
+              {t("cvv.viewDetectionResults")}
             </Button>
           </div>
         </div>
@@ -275,6 +280,7 @@ export function StopErrorAlert({
   onRetry,
   onDismiss
 }: StopErrorAlertProps) {
+  const { t } = useLanguage()
   if (!show || !stopAlertData) return null
 
   return (
@@ -286,7 +292,7 @@ export function StopErrorAlert({
             <XCircle className="h-6 w-6 text-white" />
           </div>
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            Stop Detection Failed
+            {t("cvv.stopDetectionFailed")}
           </h3>
           <p className="text-gray-600 mb-6">{stopAlertData.message}</p>
           <div className="flex gap-3 justify-center">
@@ -295,14 +301,14 @@ export function StopErrorAlert({
               {...({ variant: "outline" } as any)}
               className="px-6 bg-white hover:bg-gray-50 transition-all duration-300 hover:scale-105 shadow-lg"
             >
-              返回
+              {t("cvv.back")}
             </Button>
             <Button
               onClick={onRetry}
               disabled={stopButtonDisabled}
               className="px-6 bg-gradient-to-r from-red-500 to-pink-500 text-white hover:from-red-600 hover:to-pink-600 disabled:opacity-50 transition-all duration-300 hover:scale-105 shadow-lg"
             >
-              {stopButtonCountdown > 0 ? `重试 (${stopButtonCountdown}s)` : '重试'}
+              {stopButtonCountdown > 0 ? t("cvv.retryWithCountdown").replace("{count}", stopButtonCountdown.toString()) : t("cvv.retry")}
             </Button>
           </div>
         </div>
@@ -357,12 +363,13 @@ export function CopySuccess({
   show,
   onClose
 }: CopySuccessProps) {
+  const { t } = useLanguage()
   if (!show) return null
 
   return (
     <div className="fixed bottom-4 left-4 bg-green-500 text-white px-4 py-2 rounded-xl shadow-lg z-50 flex items-center gap-2">
       <CheckCircle className="h-3 w-3" />
-      成功
+      {t("cvv.success")}
     </div>
   )
 }

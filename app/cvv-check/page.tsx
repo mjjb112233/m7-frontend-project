@@ -8,6 +8,7 @@ import { useLanguage } from "@/contexts/language-context"
 import { useAuth } from "@/contexts/auth-context"
 import { useCVVDetection } from "./hooks/useCVVDetection"
 import { useCVVCheckAPI } from "@/lib/api"
+import { getCVVCheckConfig } from "@/lib/config/index"
 import { 
   InputStep,
   PrecheckStep,
@@ -177,12 +178,11 @@ function CVVCheckContent() {
           invalidCount: 0,         // 无效CVV数量
           unknownCount: 0,         // 未知状态CVV数量
           isRunning: true,         // 标记检测正在运行
-          detectingCVVs: [],       // 正在检测的CVV列表
         })
       } else if (result.status === 'completed') {
         // 用户检测已完成，显示完成提示页面
         setCurrentStep("completed-prompt")
-      } else if (result.status === 'not_detected') {
+      } else if (result.status === 'idle') {
         // 用户未开始检测，直接进入配置步骤
         // 配置获取由 ConfigStepV2 组件自主处理
         setCurrentStep("config")
@@ -212,46 +212,67 @@ function CVVCheckContent() {
       setIsStoppingDetection(true)
       setStopButtonDisabled(true)
       
+      // 获取配置
+      const cvvConfig = getCVVCheckConfig()
+      const cancelStatusPollInterval = cvvConfig.cancelStatusPollInterval * 1000 // 转换为毫秒
+      
       // 调用停止检测 API
       const result = await api.stopDetection(localDetectionUuid)
       
       if (result) {
-        console.log("[CVV] Stop detection request successful, getting progress immediately")
+        console.log("[CVV] Stop detection request successful, starting to poll cancel-status")
         
-        // 立即发送检测进度请求
-        const progressResult = await api.fetchDetectionProgress(localDetectionUuid)
+        // 开始轮询 cancel-status 接口
+        const maxPollAttempts = 60 // 最大轮询次数（60秒，每次3秒）
+        let pollAttempts = 0
         
-        if (progressResult) {
-          console.log("[CVV] Detection progress retrieved successfully:", progressResult)
-          
-          // 根据检测进度响应控制跳转
-          const status = (progressResult as any).status
-          if (status === 'completed' || status === 'error') {
-            console.log("[CVV] Detection stopped, jumping to results page")
+        const pollCancelStatus = async (): Promise<void> => {
+          try {
+            const cancelStatus = await api.fetchCancelStatus(localDetectionUuid)
+            
+            if (cancelStatus) {
+              console.log("[CVV] Cancel status:", cancelStatus)
+              
+              if (cancelStatus.status === 'completed') {
+                console.log("[CVV] 停止完成，跳转到结果页面")
+                setCurrentStep("results")
+                setIsStoppingDetection(false)
+                return
+              }
+            }
+            
+            // 如果未完成，继续轮询
+            pollAttempts++
+            if (pollAttempts >= maxPollAttempts) {
+              console.log("[CVV] 轮询超时，直接跳转到结果页面")
+              setCurrentStep("results")
+              setIsStoppingDetection(false)
+              return
+            }
+            
+            // 继续下一次轮询
+            setTimeout(pollCancelStatus, cancelStatusPollInterval)
+          } catch (error) {
+            console.error("[CVV] 轮询 cancel-status 失败:", error)
+            // 轮询出错时，也跳转到结果页面
             setCurrentStep("results")
-          } else {
-            console.log("[CVV] Detection still in progress, keeping current page")
-            // 检测仍在进行，可能需要重试或显示错误
-            setStopAlertData({ message: "Stop detection request sent, but detection is still in progress" })
-            setShowStopErrorAlert(true)
-            startStopButtonCountdown()
+            setIsStoppingDetection(false)
           }
-        } else {
-          console.log("[CVV] Failed to get detection progress, showing stop success message")
-          setStopAlertData(result)
-          setShowStopSuccessAlert(true)
         }
+        
+        // 开始第一次轮询（延迟一点，给后端处理时间）
+        setTimeout(pollCancelStatus, cancelStatusPollInterval)
       } else {
         setStopAlertData({ message: "Failed to stop detection" })
         setShowStopErrorAlert(true)
         startStopButtonCountdown()
+        setIsStoppingDetection(false)
       }
     } catch (error) {
       console.error("Error stopping detection:", error)
       setStopAlertData({ message: "Network error, please try again later" })
       setShowStopErrorAlert(true)
       startStopButtonCountdown()
-    } finally {
       setIsStoppingDetection(false)
     }
   }
@@ -393,7 +414,7 @@ function CVVCheckContent() {
         <StepIndicator currentStep={currentStep} />
 
         {/* 配置步骤 */}
-        {userDetectionStatus === "not_detected" && currentStep === "config" && (
+        {userDetectionStatus === "idle" && currentStep === "config" && (
           <ConfigStepV2
             onNext={() => setCurrentStep("input")}
             onConfigSelected={(config) => {
@@ -479,7 +500,7 @@ function CVVCheckContent() {
                   setPrecheckResults({ valid: [], invalid: [] })
               setInputText("")
 
-                  setUserDetectionStatus("not_detected")
+                  setUserDetectionStatus("idle")
                 }}
             copySuccess={copySuccess}
             setCopySuccess={setCopySuccess}

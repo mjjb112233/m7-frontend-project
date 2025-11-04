@@ -1,0 +1,38 @@
+{
+  "app": {
+    "name": "M7 金融科技平台",
+    "version": "2.1.0",
+    "environment": "development"
+  },
+  "api": {
+    "baseUrl": "http://localhost:8080/api",
+    "timeout": 30000,
+    "retries": 3,
+    "retryDelay": 1000
+  },
+  "features": {
+    "debugMode": true,
+    "enableLogging": true,
+    "mockData": false
+  },
+  "auth": {
+    "tokenKey": "m7_auth_token",
+    "tokenExpiry": "7d"
+  },
+  "pagination": {
+    "defaultPageSize": 10,
+    "maxPageSize": 100
+  },
+  "cvvCheck": {
+    "cancelStatusPollInterval": 3,
+    "detectionProgressPollInterval": 2
+  },
+  "language": {
+    "defaultLanguage": "zh"
+  },
+  "branding": {
+    "copyWebsiteName": "cc-m7.com",
+    "logoName": "cc-m7"
+  }
+}
+

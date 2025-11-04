@@ -1,8 +1,12 @@
+"use client"
+
 import React from "react"
 import { Badge } from "@/components/ui/badge"
 import { Shield, Zap, Globe } from "lucide-react"
+import { useLanguage } from "@/contexts/language-context"
 
 export function Footer() {
+  const { t } = useLanguage()
   return (
     <footer className="bg-gradient-to-r from-slate-50 to-slate-100 border-t border-slate-200 mt-16">
       <div className="max-w-6xl mx-auto px-4 py-8">
@@ -14,10 +18,10 @@ export function Footer() {
               <div className="w-6 h-6 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
                 <Shield className="h-3 w-3 text-white" />
               </div>
-              <h3 className="font-bold text-gray-900">智能卡片分析</h3>
+              <h3 className="font-bold text-gray-900">{t("bin.footer.brandTitle")}</h3>
             </div>
             <p className="text-sm text-gray-600 leading-relaxed">
-              基于BIN码的高效银行卡分类工具，支持多维度智能分析，为您提供准确可靠的卡片信息识别服务。
+              {t("bin.footer.brandDesc")}
             </p>
           </div>
 
@@ -25,24 +29,24 @@ export function Footer() {
           <div className="space-y-3">
             <h4 className="font-semibold text-gray-900 flex items-center gap-2">
               <Zap className="h-4 w-4 text-purple-600" />
-              核心特性
+              {t("bin.footer.coreFeatures")}
             </h4>
             <ul className="space-y-2 text-sm text-gray-600">
               <li className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
-                多维度智能分类
+                {t("bin.footer.multiDimensionClassification")}
               </li>
               <li className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
-                实时BIN信息查询
+                {t("bin.footer.realTimeBINQuery")}
               </li>
               <li className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
-                批量数据处理
+                {t("bin.footer.batchDataProcessing")}
               </li>
               <li className="flex items-center gap-2">
                 <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
-                99.9%识别准确率
+                {t("bin.footer.accuracyRate")}
               </li>
             </ul>
           </div>
@@ -51,7 +55,7 @@ export function Footer() {
           <div className="space-y-3">
             <h4 className="font-semibold text-gray-900 flex items-center gap-2">
               <Globe className="h-4 w-4 text-purple-600" />
-              全球支持
+              {t("bin.footer.globalSupport")}
             </h4>
             <div className="flex flex-wrap gap-2">
               <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 text-xs">
@@ -74,7 +78,7 @@ export function Footer() {
               </Badge>
             </div>
             <p className="text-xs text-gray-500 mt-2">
-              支持全球主流卡组织，覆盖200+国家和地区
+              {t("bin.footer.globalSupportDesc")}
             </p>
           </div>
         </div>
@@ -84,15 +88,15 @@ export function Footer() {
         {/* 底部信息 */}
         <div className="flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="text-sm text-gray-500">
-            © 2025 智能卡片分析系统. 保留所有权利.
+            {t("bin.footer.copyright")}
           </div>
           <div className="flex items-center gap-4 text-xs text-gray-400">
-            <span>数据更新: 实时同步</span>
+            <span>{t("bin.footer.dataUpdate")}</span>
             <span>•</span>
-            <span>服务状态: 正常运行</span>
+            <span>{t("bin.footer.serviceStatus")}</span>
             <span>•</span>
             <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200 text-xs">
-              在线
+              {t("bin.footer.online")}
             </Badge>
           </div>
         </div>

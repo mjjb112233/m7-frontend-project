@@ -6,7 +6,10 @@ import { CreditCard } from "lucide-react"
 import Header from "@/components/layout/header"
 import { Footer } from "@/components/layout/footer"
 import { useBinClassify } from "./hooks/useBinClassify"
-import { CardInput, GroupedResults, QueryProgress, MultiDimensionFilter, DataSourceInfo, Toast, LoadingOverlay } from "./components"
+import { CardInput, GroupedResults, QueryProgress, MultiDimensionFilter, DataSourceInfo, LoadingOverlay } from "./components"
+import { Toast } from "@/components/shared/toast"
+import { getBrandingConfig } from "@/lib/config"
+import { useLanguage } from "@/contexts/language-context"
 
 export default function BinClassifyPage() {
   return (
@@ -17,6 +20,7 @@ export default function BinClassifyPage() {
 }
 
 function BinClassifyContent() {
+  const { t } = useLanguage()
   const [toastVisible, setToastVisible] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
   const [toastType, setToastType] = useState<'success' | 'error'>('success')
@@ -80,22 +84,30 @@ function BinClassifyContent() {
 
   // 复制卡号
   const copyCardNumber = async (cardNumber: string) => {
+    let websiteName = "cc-m7.com"
     try {
-      await navigator.clipboard.writeText(cardNumber)
-      showToast('卡号已复制到剪贴板')
+      const brandingConfig = getBrandingConfig()
+      websiteName = brandingConfig?.copyWebsiteName || "cc-m7.com"
+    } catch (error) {
+      console.error("Failed to get copy website name from config:", error)
+    }
+    const cardNumberWithSuffix = `${cardNumber}  ---->${websiteName}`
+    try {
+      await navigator.clipboard.writeText(cardNumberWithSuffix)
+      showToast(t("bin.cardCopied"))
     } catch (err) {
       console.error('复制失败:', err)
       try {
         // 降级方案：创建临时文本区域
         const textArea = document.createElement('textarea')
-        textArea.value = cardNumber
+        textArea.value = cardNumberWithSuffix
         document.body.appendChild(textArea)
         textArea.select()
         document.execCommand('copy')
         document.body.removeChild(textArea)
-        showToast('卡号已复制到剪贴板')
+        showToast(t("bin.cardCopied"))
       } catch (fallbackErr) {
-        showToast('复制失败，请手动复制', 'error')
+        showToast(t("bin.copyFailed"), 'error')
       }
     }
   }
@@ -133,12 +145,12 @@ function BinClassifyContent() {
   // 获取分类标签
   const getCategoryLabel = (category: string) => {
     const labels: { [key: string]: string } = {
-      brand: "卡片品牌",
-      type: "卡片种类",
-      level: "卡片等级",
-      bank: "发卡行",
-      country: "发卡国家",
-      product: "产品名称",
+      brand: t("bin.categoryLabels.brand"),
+      type: t("bin.categoryLabels.type"),
+      level: t("bin.categoryLabels.level"),
+      bank: t("bin.categoryLabels.bank"),
+      country: t("bin.categoryLabels.country"),
+      product: t("bin.categoryLabels.product"),
     }
     return labels[category] || category
   }
@@ -153,9 +165,9 @@ function BinClassifyContent() {
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center shadow-lg">
               <CreditCard className="h-4 w-4 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">智能卡片分类系统</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{t("bin.systemTitle")}</h1>
           </div>
-          <p className="text-sm text-gray-600 max-w-xl mx-auto">基于BIN码的高效银行卡分类工具，支持多维度智能分析</p>
+          <p className="text-sm text-gray-600 max-w-xl mx-auto">{t("bin.systemSubtitle")}</p>
         </div>
 
         <div className="space-y-6 mb-8">
@@ -211,10 +223,17 @@ function BinClassifyContent() {
             onToggleGroup={toggleGroup}
             onCopyCard={copyCardNumber}
             onCopyGroup={async (cards) => {
-              const groupData = cards.map((card) => card.cardNumber).join("\n")
+              let websiteName = "cc-m7.com"
+              try {
+                const brandingConfig = getBrandingConfig()
+                websiteName = brandingConfig?.copyWebsiteName || "cc-m7.com"
+              } catch (error) {
+                console.error("Failed to get copy website name from config:", error)
+              }
+              const groupData = cards.map((card) => `${card.cardNumber}  ---->${websiteName}`).join("\n")
               try {
                 await navigator.clipboard.writeText(groupData)
-                showToast(`已复制 ${cards.length} 张卡号到剪贴板`)
+                showToast(t("bin.cardsCopied").replace("{count}", cards.length.toString()))
               } catch (err) {
                 console.error('复制失败:', err)
                 try {
@@ -225,9 +244,9 @@ function BinClassifyContent() {
                   textArea.select()
                   document.execCommand('copy')
                   document.body.removeChild(textArea)
-                  showToast(`已复制 ${cards.length} 张卡号到剪贴板`)
+                  showToast(t("bin.cardsCopied").replace("{count}", cards.length.toString()))
                 } catch (fallbackErr) {
-                  showToast('复制失败，请手动复制', 'error')
+                  showToast(t("bin.copyFailed"), 'error')
                 }
               }
             }}
@@ -251,7 +270,7 @@ function BinClassifyContent() {
       
       <LoadingOverlay 
         isVisible={isFiltering && !isProcessing}
-        message="筛选数据中..."
+        message={t("bin.filtering")}
       />
     </div>
   )

@@ -2,6 +2,7 @@ import React from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Zap, CheckCircle, Loader2 } from "lucide-react"
+import { useLanguage } from "@/contexts/language-context"
 
 interface DetectingPromptProps {
   onViewProgress: () => void
@@ -9,6 +10,7 @@ interface DetectingPromptProps {
 }
 
 export function DetectingPrompt({ onViewProgress, isLoadingProgress }: DetectingPromptProps) {
+  const { t } = useLanguage()
   return (
     <div className="space-y-4 max-w-2xl mx-auto">
       <Card className="relative overflow-hidden border-0 shadow-xl">
@@ -19,10 +21,10 @@ export function DetectingPrompt({ onViewProgress, isLoadingProgress }: Detecting
             <div className="w-6 h-6 bg-gradient-to-br from-orange-500 to-amber-500 rounded-lg flex items-center justify-center shadow-lg">
               <Zap className="h-4 w-4 text-white" />
             </div>
-            Detection In Progress
+            {t("cvv.detectionInProgress")}
           </CardTitle>
           <CardDescription className="text-sm text-gray-600">
-            您的CVV检测正在进行中，点击下方按钮查看实时进度
+            {t("cvv.detectionInProgressDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent className="relative p-6">
@@ -33,12 +35,12 @@ export function DetectingPrompt({ onViewProgress, isLoadingProgress }: Detecting
               size="lg"
             >
               <Zap className="h-4 w-4 mr-2" />
-              查看检测进度
+              {t("cvv.viewProgress")}
             </Button>
             {isLoadingProgress && (
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                正在加载进度数据...
+                {t("cvv.loadingProgress")}
               </div>
             )}
           </div>
@@ -55,6 +57,7 @@ interface CompletedPromptProps {
 }
 
 export function CompletedPrompt({ onViewResults, isLoadingResult }: CompletedPromptProps) {
+  const { t } = useLanguage()
   return (
     <div className="space-y-4 max-w-2xl mx-auto">
       <Card className="relative overflow-hidden border-0 shadow-xl">
@@ -65,10 +68,10 @@ export function CompletedPrompt({ onViewResults, isLoadingResult }: CompletedPro
             <div className="w-6 h-6 bg-gradient-to-br from-emerald-500 to-green-500 rounded-lg flex items-center justify-center shadow-lg">
               <CheckCircle className="h-4 w-4 text-white" />
             </div>
-            Detection Completed
+            {t("cvv.detectionCompleted")}
           </CardTitle>
           <CardDescription className="text-sm text-gray-600">
-            您的CVV检测已完成，点击下方按钮查看检测结果
+            {t("cvv.detectionCompletedDesc")}
           </CardDescription>
         </CardHeader>
         <CardContent className="relative p-6">
@@ -79,12 +82,12 @@ export function CompletedPrompt({ onViewResults, isLoadingResult }: CompletedPro
               size="lg"
             >
               <CheckCircle className="h-4 w-4 mr-2" />
-              查看检测结果
+              {t("cvv.viewResults")}
             </Button>
             {isLoadingResult && (
               <div className="flex items-center gap-2 text-sm text-gray-600">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                正在加载结果数据...
+                {t("cvv.loadingResults")}
               </div>
             )}
           </div>

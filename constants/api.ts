@@ -2,7 +2,7 @@
  * API相关常量
  */
 
-import { getApiBaseUrl, getApiConfig } from '@/lib/config'
+import { getApiBaseUrl, getApiConfig } from '@/lib/config/index'
 
 // API基础URL
 export const API_BASE_URL = getApiBaseUrl()
@@ -21,7 +21,7 @@ export const API_ENDPOINTS = {
   CVV_CHECK: {
     CONFIG: '/cvv-check/config',
     STATUS: '/cvv-check/status',
-    USER_STATUS: '/cvv-check/user-status',
+    USER_STATUS: '/cvv-check/detection-status',
     START_DETECTION: '/cvv-check/start-detection',
     STOP_DETECTION: '/cvv-check/stop-detection',
     DETECTION_PROGRESS: '/cvv-check/detection-progress',

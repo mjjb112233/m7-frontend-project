@@ -75,7 +75,7 @@ export default function AccountPage() {
       <div className="min-h-screen bg-background">
         <Header />
         <div className="flex items-center justify-center h-96">
-          <p className="text-muted-foreground">请先登录以查看账户信息</p>
+          <p className="text-muted-foreground">{t("account.loginRequired")}</p>
         </div>
       </div>
     )
@@ -149,10 +149,10 @@ export default function AccountPage() {
                         <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center shadow-lg">
                           <Camera className="h-4 w-4 text-white" />
                         </div>
-                        选择头像
+                        {t("account.selectAvatar")}
                       </DialogTitle>
                       <DialogDescription className="text-sm text-gray-600 mt-1">
-                        从下面选择一个你喜欢的头像风格和变体
+                        {t("account.selectAvatarDesc")}
                       </DialogDescription>
                     </DialogHeader>
                     
@@ -174,8 +174,8 @@ export default function AccountPage() {
                       {/* 操作按钮区域 */}
                       <div className="flex items-center justify-between pt-4 border-t border-gray-200">
                         <div className="text-sm text-gray-500">
-                          <span>当前选择: {selectedAvatarStyle}</span>
-                          <span className="ml-4 text-blue-600">实时预览</span>
+                          <span>{t("account.currentSelection")}: {selectedAvatarStyle}</span>
+                          <span className="ml-4 text-blue-600">{t("account.realTimePreview")}</span>
                         </div>
                         
                         <div className="flex gap-3">
@@ -189,7 +189,7 @@ export default function AccountPage() {
                             }}
                             className="border-gray-200 hover:bg-gray-50 transition-all duration-200"
                           >
-                            取消
+                            {t("account.cancel")}
                           </Button>
                           <Button 
                             onClick={() => {
@@ -201,7 +201,7 @@ export default function AccountPage() {
                             className="font-semibold py-2 px-6 bg-gradient-to-r from-blue-500 to-indigo-500 text-white hover:from-blue-600 hover:to-indigo-600 transition-all duration-300 hover:scale-105 shadow-lg"
                           >
                             <Save className="w-4 h-4 mr-2" />
-                            保存头像
+                            {t("account.saveAvatar")}
                           </Button>
                         </div>
                       </div>
@@ -218,7 +218,7 @@ export default function AccountPage() {
                   <h1 className="text-3xl font-bold text-foreground">{user.name || user.username || user.email}</h1>
                   <Button variant="outline" size="sm" onClick={() => setIsEditing(!isEditing)}>
                     <Edit className="w-4 h-4 mr-2" />
-                    编辑资料
+                    {t("account.editProfile")}
                   </Button>
                 </div>
                 <p className="text-muted-foreground mb-4">{user.email}</p>
@@ -232,7 +232,7 @@ export default function AccountPage() {
                     <User className="w-5 h-5 text-blue-600" />
                     <span className="font-semibold text-blue-700">Lv.{user.level}</span>
                   </div>
-                  <Badge variant="secondary">活跃用户</Badge>
+                  <Badge variant="secondary">{t("account.activeUser")}</Badge>
                 </div>
               </div>
             </div>
@@ -244,11 +244,11 @@ export default function AccountPage() {
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="profile" className="flex items-center gap-2">
               <User className="w-4 h-4" />
-              个人资料
+              {t("account.profile")}
             </TabsTrigger>
             <TabsTrigger value="recharge" className="flex items-center gap-2">
               <CreditCard className="w-4 h-4" />
-              充值记录
+              {t("account.rechargeRecords")}
             </TabsTrigger>
           </TabsList>
 
@@ -256,13 +256,13 @@ export default function AccountPage() {
           <TabsContent value="profile">
             <Card>
               <CardHeader>
-                <CardTitle>个人信息</CardTitle>
-                <CardDescription>管理您的账户信息和偏好设置</CardDescription>
+                <CardTitle>{t("account.personalInfo")}</CardTitle>
+                <CardDescription>{t("account.manageAccount")}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <Label htmlFor="name">用户名</Label>
+                    <Label htmlFor="name">{t("account.username")}</Label>
                     <Input
                       id="name"
                       value={isEditing ? editedUser.name : (user.name || user.username || user.email)}
@@ -271,7 +271,7 @@ export default function AccountPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="email">邮箱地址</Label>
+                    <Label htmlFor="email">{t("account.email")}</Label>
                     <Input
                       id="email"
                       type="email"
@@ -282,23 +282,23 @@ export default function AccountPage() {
                   </div>
                   {isEditing && (
                     <div className="space-y-2">
-                      <Label htmlFor="password">修改密码</Label>
+                      <Label htmlFor="password">{t("account.changePassword")}</Label>
                       <Input
                         id="password"
                         type="password"
-                        placeholder="输入新密码（留空则不修改）"
+                        placeholder={t("account.newPasswordPlaceholder")}
                         value={editedUser.password}
                         onChange={(e) => setEditedUser({ ...editedUser, password: e.target.value })}
                       />
                     </div>
                   )}
                   <div className="space-y-2">
-                    <Label htmlFor="joined">注册时间</Label>
+                    <Label htmlFor="joined">{t("account.joinDate")}</Label>
                     <Input id="joined" value="2024-01-01" disabled />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="status">账户状态</Label>
-                    <Input id="status" value="正常" disabled />
+                    <Label htmlFor="status">{t("account.accountStatus")}</Label>
+                    <Input id="status" value={t("account.normal")} disabled />
                   </div>
                 </div>
 
@@ -306,10 +306,10 @@ export default function AccountPage() {
                   <div className="flex gap-2">
                     <Button onClick={handleSaveProfile}>
                       <Save className="w-4 h-4 mr-2" />
-                      保存更改
+                      {t("account.saveChanges")}
                     </Button>
                     <Button variant="outline" onClick={() => setIsEditing(false)}>
-                      取消
+                      {t("account.cancel")}
                     </Button>
                   </div>
                 )}
@@ -325,17 +325,17 @@ export default function AccountPage() {
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle>充值记录</CardTitle>
-                    <CardDescription>查看您的所有充值交易历史</CardDescription>
+                    <CardTitle>{t("account.rechargeRecords")}</CardTitle>
+                    <CardDescription>{t("account.viewRechargeHistory")}</CardDescription>
                   </div>
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm">
                       <Calendar className="w-4 h-4 mr-2" />
-                      日期范围
+                      {t("account.dateRange")}
                     </Button>
                     <Button variant="outline" size="sm">
                       <Download className="w-4 h-4 mr-2" />
-                      导出
+                      {t("account.export")}
                     </Button>
                   </div>
                 </div>
@@ -344,19 +344,19 @@ export default function AccountPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>日期</TableHead>
-                      <TableHead>充值金额</TableHead>
-                      <TableHead>支付金额</TableHead>
-                      <TableHead>支付方式</TableHead>
-                      <TableHead>状态</TableHead>
-                      <TableHead>交易哈希</TableHead>
+                      <TableHead>{t("account.date")}</TableHead>
+                      <TableHead>{t("account.rechargeAmount")}</TableHead>
+                      <TableHead>{t("account.paymentAmount")}</TableHead>
+                      <TableHead>{t("account.paymentMethod")}</TableHead>
+                      <TableHead>{t("account.status")}</TableHead>
+                      <TableHead>{t("account.transactionHash")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {/* TODO: 从API获取真实的充值记录数据 */}
                     <TableRow>
                       <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                        暂无充值记录
+                        {t("account.noRechargeRecords")}
                       </TableCell>
                     </TableRow>
                   </TableBody>
@@ -373,12 +373,12 @@ export default function AccountPage() {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <CheckCircle className="w-5 h-5 text-green-500" />
-              保存成功
+              {t("account.saveSuccess")}
             </AlertDialogTitle>
-            <AlertDialogDescription>您的个人资料已成功更新。</AlertDialogDescription>
+            <AlertDialogDescription>{t("account.profileUpdated")}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction>确定</AlertDialogAction>
+            <AlertDialogAction>{t("account.confirm")}</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

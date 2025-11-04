@@ -247,7 +247,7 @@ function RechargeContent() {
   const generateFeatures = (mCoins: number) => {
     const features = []
     if (mCoins >= 10) features.push(`CVV检测 ${Math.floor(mCoins / 3)}-${Math.floor(mCoins / 2.5)}次`)
-    if (mCoins >= 20) features.push("BIN分类功能")
+    if (mCoins >= 20) features.push("卡分类功能")
     if (mCoins >= 50) features.push("信息生成功能")
     if (mCoins >= 100) features.push("批量处理功能")
     if (mCoins >= 500) features.push("API接口访问")
