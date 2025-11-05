@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { AuthGuard } from "@/components/layout/auth-guard"
 import Header from "@/components/layout/header"
 import { CVVCheckFooter } from "@/components/layout/cvv-check-footer"
@@ -42,6 +42,9 @@ function CVVCheckContent() {
   // 使用自定义hooks
   const detectionState = useCVVDetection()
   const api = useCVVCheckAPI()
+  
+  // 保存 cancel-status 轮询的定时器 ID
+  const cancelStatusTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   // 解构状态
   const {
@@ -140,6 +143,12 @@ function CVVCheckContent() {
         clearInterval(progressTimer)
         console.log("[CVV] 已清理 progressTimer")
       }
+      // 清除 cancel-status 轮询定时器
+      if (cancelStatusTimerRef.current) {
+        clearTimeout(cancelStatusTimerRef.current)
+        cancelStatusTimerRef.current = null
+        console.log("[CVV] 已清理 cancelStatusTimerRef")
+      }
     }
   }, [progressTimer])
 
@@ -235,6 +244,11 @@ function CVVCheckContent() {
               
               if (cancelStatus.status === 'completed') {
                 console.log("[CVV] 停止完成，跳转到结果页面")
+                // 清除定时器
+                if (cancelStatusTimerRef.current) {
+                  clearTimeout(cancelStatusTimerRef.current)
+                  cancelStatusTimerRef.current = null
+                }
                 setCurrentStep("results")
                 setIsStoppingDetection(false)
                 return
@@ -245,24 +259,47 @@ function CVVCheckContent() {
             pollAttempts++
             if (pollAttempts >= maxPollAttempts) {
               console.log("[CVV] 轮询超时，直接跳转到结果页面")
+              // 清除定时器
+              if (cancelStatusTimerRef.current) {
+                clearTimeout(cancelStatusTimerRef.current)
+                cancelStatusTimerRef.current = null
+              }
               setCurrentStep("results")
               setIsStoppingDetection(false)
               return
             }
             
-            // 继续下一次轮询
-            setTimeout(pollCancelStatus, cancelStatusPollInterval)
+            // 清除旧的定时器
+            if (cancelStatusTimerRef.current) {
+              clearTimeout(cancelStatusTimerRef.current)
+            }
+            // 继续下一次轮询，并保存定时器 ID
+            cancelStatusTimerRef.current = setTimeout(pollCancelStatus, cancelStatusPollInterval)
           } catch (error) {
             console.error("[CVV] 轮询 cancel-status 失败:", error)
+            // 清除定时器
+            if (cancelStatusTimerRef.current) {
+              clearTimeout(cancelStatusTimerRef.current)
+              cancelStatusTimerRef.current = null
+            }
             // 轮询出错时，也跳转到结果页面
             setCurrentStep("results")
             setIsStoppingDetection(false)
           }
         }
         
-        // 开始第一次轮询（延迟一点，给后端处理时间）
-        setTimeout(pollCancelStatus, cancelStatusPollInterval)
+        // 清除旧的定时器（如果有）
+        if (cancelStatusTimerRef.current) {
+          clearTimeout(cancelStatusTimerRef.current)
+        }
+        // 开始第一次轮询（延迟一点，给后端处理时间），并保存定时器 ID
+        cancelStatusTimerRef.current = setTimeout(pollCancelStatus, cancelStatusPollInterval)
       } else {
+        // 清除定时器
+        if (cancelStatusTimerRef.current) {
+          clearTimeout(cancelStatusTimerRef.current)
+          cancelStatusTimerRef.current = null
+        }
         setStopAlertData({ message: "Failed to stop detection" })
         setShowStopErrorAlert(true)
         startStopButtonCountdown()
@@ -270,6 +307,11 @@ function CVVCheckContent() {
       }
     } catch (error) {
       console.error("Error stopping detection:", error)
+      // 清除定时器
+      if (cancelStatusTimerRef.current) {
+        clearTimeout(cancelStatusTimerRef.current)
+        cancelStatusTimerRef.current = null
+      }
       setStopAlertData({ message: "Network error, please try again later" })
       setShowStopErrorAlert(true)
       startStopButtonCountdown()

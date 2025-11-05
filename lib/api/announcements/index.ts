@@ -5,11 +5,17 @@
 
 import { get } from '../request'
 
-// 公告接口定义 - 简化版本，只保留实际使用的字段
+// 公告接口定义 - 支持双语
 export interface Announcement {
   id: string
-  title: string
-  message: string
+  // 双语字段（推荐使用）
+  titleZh: string  // 中文标题
+  titleEn: string  // 英文标题
+  messageZh: string // 中文消息
+  messageEn: string // 英文消息
+  // 保留原有字段以向后兼容（如果后端暂时只返回单语数据）
+  title?: string
+  message?: string
   uiType: 'info' | 'warning' | 'success' | 'error'
   carouselDuration?: number // 轮播时间间隔（毫秒），可选字段
 }

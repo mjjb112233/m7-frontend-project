@@ -10,6 +10,7 @@ import { Copy, Download, MapPin, User, CreditCard, Phone, Mail, AlertCircle, Spa
 import Header from "@/components/layout/header"
 import { InfoGenerateFooter } from "@/components/layout/info-generate-footer"
 import { AuthContext } from "@/contexts/auth-context"
+import { useLanguage } from "@/contexts/language-context"
 import { getBrandingConfig } from "@/lib/config"
 
 interface GeneratedInfo {
@@ -50,6 +51,7 @@ interface GenerateInfoResponse {
 }
 
 export default function InfoGeneratePage() {
+  const { t } = useLanguage()
   const authContext = useContext(AuthContext)
   const token = authContext?.token
   const updateMCoins = authContext?.updateMCoins
@@ -107,12 +109,12 @@ export default function InfoGeneratePage() {
   // 生成信息
   const handleGenerate = async () => {
     if (!token) {
-      alert("请先登录")
+      alert(t("info.loginRequired"))
       return
     }
 
     if (!cardNumbers.trim()) {
-      alert("请输入卡号")
+      alert(t("info.enterCardNumber"))
       return
     }
 
@@ -122,7 +124,7 @@ export default function InfoGeneratePage() {
       .filter(card => card.length > 0)
 
     if (cardNumberList.length === 0) {
-      alert("请输入有效的卡号")
+      alert(t("info.enterValidCard"))
       return
     }
 
@@ -149,11 +151,11 @@ export default function InfoGeneratePage() {
         // 刷新用户信息以获取最新的M币余额
         await refreshUserInfo?.()
       } else {
-        alert('生成失败: ' + data.message)
+        alert(t("info.generateFailed") + ': ' + data.message)
       }
     } catch (error) {
       console.error('生成信息错误:', error)
-      alert('生成失败，请稍后重试')
+      alert(t("info.generateError"))
     } finally {
       setIsGenerating(false)
     }
@@ -175,12 +177,12 @@ export default function InfoGeneratePage() {
     } catch (error) {
       console.error("Failed to get copy website name from config:", error)
     }
-    const text = `卡号: ${info.cardNumber}  ---->${websiteName}\n有效期: ${info.month}/${info.year}  ---->${websiteName}\n姓名: ${info.fullName}  ---->${websiteName}\n电话: ${info.phone}  ---->${websiteName}\n邮箱: ${info.email}  ---->${websiteName}\n地址: ${info.address}  ---->${websiteName}\n城市: ${info.city}  ---->${websiteName}\n州: ${info.state}  ---->${websiteName}\n邮编: ${info.zipCode}  ---->${websiteName}\n国家: ${info.country}  ---->${websiteName}`
+    const text = `${t("info.cardNumber")}: ${info.cardNumber}  ---->${websiteName}\n${t("info.expiry")}: ${info.month}/${info.year}  ---->${websiteName}\n${t("info.name")}: ${info.fullName}  ---->${websiteName}\n${t("info.phone")}: ${info.phone}  ---->${websiteName}\n${t("info.email")}: ${info.email}  ---->${websiteName}\n${t("info.address")}: ${info.address}  ---->${websiteName}\n${t("info.city")}: ${info.city}  ---->${websiteName}\n${t("info.province")}: ${info.state}  ---->${websiteName}\n${t("info.zipCode")}: ${info.zipCode}  ---->${websiteName}\n${t("info.country")}: ${info.country}  ---->${websiteName}`
     
     navigator.clipboard.writeText(text).then(() => {
-      showToastMessage("信息已复制到剪贴板", "success")
+      showToastMessage(t("info.copied"), "success")
     }).catch(() => {
-      showToastMessage("复制失败", "error")
+      showToastMessage(t("info.copyFailed"), "error")
     })
   }
 
@@ -195,9 +197,9 @@ export default function InfoGeneratePage() {
     }
     const allFailedCards = failedCardNumbers.map(cardNumber => `${cardNumber}  ---->${websiteName}`).join('\n')
     navigator.clipboard.writeText(allFailedCards).then(() => {
-      showToastMessage("失败卡号已复制到剪贴板", "success")
+      showToastMessage(t("info.failedCardsCopied"), "success")
     }).catch(() => {
-      showToastMessage("复制失败", "error")
+      showToastMessage(t("info.copyFailed"), "error")
     })
   }
 
@@ -305,7 +307,7 @@ export default function InfoGeneratePage() {
 
     const csvContent =
       "data:text/csv;charset=utf-8," +
-      "卡号,有效期,姓名,电话,邮箱,地址,城市,州,邮编,国家\n" +
+      `${t("info.cardNumber")},${t("info.expiry")},${t("info.name")},${t("info.phone")},${t("info.email")},${t("info.address")},${t("info.city")},${t("info.province")},${t("info.zipCode")},${t("info.country")}\n` +
       generatedData
         .map(
           (info) =>
@@ -340,9 +342,9 @@ export default function InfoGeneratePage() {
             <div className="w-8 h-8 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center shadow-lg">
               <User className="h-4 w-4 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">智能信息生成系统</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{t("info.systemTitle")}</h1>
           </div>
-          <p className="text-sm text-gray-600 max-w-xl mx-auto">根据卡号生成完整的身份信息，使用真实地理位置数据</p>
+          <p className="text-sm text-gray-600 max-w-xl mx-auto">{t("info.subtitle")}</p>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -351,20 +353,20 @@ export default function InfoGeneratePage() {
               <div className="absolute inset-0 bg-gradient-to-br from-cyan-50 to-blue-50 opacity-60"></div>
               <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-cyan-200/30 to-blue-200/30 rounded-full -translate-y-16 translate-x-16"></div>
               <CardHeader className="relative bg-gradient-to-r from-cyan-600/10 to-blue-600/10 pb-3">
-                <CardTitle className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                  <CardTitle className="text-lg font-bold text-gray-900 flex items-center gap-2">
                   <div className="w-6 h-6 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center shadow-lg">
                     <CreditCard className="h-4 w-4 text-white" />
                   </div>
-                  卡号输入
+                  {t("info.inputCardTitle")}
                 </CardTitle>
               </CardHeader>
               <CardContent className="relative space-y-4 p-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-900 mb-2">输入卡号（每行一个）</label>
+                  <label className="block text-sm font-medium text-gray-900 mb-2">{t("info.inputLabel")}</label>
                   <Textarea
                     value={cardNumbers}
                     onChange={(e) => setCardNumbers(e.target.value)}
-                    placeholder="请输入卡号，每行一个&#10;例如：&#10;4147202688856879&#10;4207670137072792"
+                    placeholder={t("info.inputPlaceholder")}
                     className="min-h-[200px] font-mono text-sm border-gray-200 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-200 transition-all duration-200 bg-white/80 backdrop-blur-sm"
                   />
                 </div>
@@ -378,16 +380,16 @@ export default function InfoGeneratePage() {
                           <AlertCircle className="h-3 w-3 text-white" />
                         </div>
                         <div className="flex-1">
-                          <div className="text-sm font-medium text-orange-900">消耗预览</div>
+                          <div className="text-sm font-medium text-orange-900">{t("info.costPreview")}</div>
                           <div className="text-sm text-orange-700">
-                            检测到 {getCardCount()} 个卡号，需要消耗 {getCardCount() * pricePerCard} M币
+                            {t("info.detectedCards", { count: getCardCount(), cost: getCardCount() * pricePerCard })}
                           </div>
                         </div>
                         <Badge
                           variant="secondary"
                           className="bg-gradient-to-r from-orange-100 to-amber-100 text-orange-800 border-orange-200 shadow-sm"
                         >
-                          -{getCardCount() * pricePerCard} M币
+                          -{getCardCount() * pricePerCard} {t("recharge.coins")}
                         </Badge>
                       </div>
                     </CardContent>
@@ -403,12 +405,12 @@ export default function InfoGeneratePage() {
                     {isGenerating ? (
                       <div className="flex items-center gap-2">
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        生成中...
+                        {t("info.generating")}
                       </div>
                     ) : (
                       <div className="flex items-center gap-2">
                         <Sparkles className="w-4 h-4" />
-                        开始生成
+                        {t("info.generateButton")}
                       </div>
                     )}
                   </Button>
@@ -416,9 +418,9 @@ export default function InfoGeneratePage() {
                 </div>
 
                 <div className="text-sm text-gray-500 bg-white/80 backdrop-blur-sm p-3 rounded-lg border border-gray-200 shadow-sm">
-                  <p>• 每生成一条信息消耗 {pricePerCard} M币</p>
-                  <p>• 使用真实地理位置数据生成</p>
-                  <p>• 支持批量生成，每行一个卡号</p>
+                  <p>• {t("info.costPerCard", { price: pricePerCard })}</p>
+                  <p>• {t("info.usingRealData")}</p>
+                  <p>• {t("info.supportBatch")}</p>
                 </div>
                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-cyan-500 to-blue-500"></div>
               </CardContent>
@@ -433,7 +435,7 @@ export default function InfoGeneratePage() {
                     <div className="w-6 h-6 bg-gradient-to-br from-red-500 to-pink-500 rounded-lg flex items-center justify-center shadow-lg">
                       <XCircle className="h-4 w-4 text-white" />
                     </div>
-                    生成失败的卡号
+                    {t("info.failedCardsTitle")}
                     <div className="ml-auto flex items-center gap-2">
                       <Button
                         variant="ghost"
@@ -442,7 +444,7 @@ export default function InfoGeneratePage() {
                         className="text-red-600 hover:text-red-800 hover:bg-red-100 flex items-center gap-1"
                       >
                         <Copy className="h-4 w-4" />
-                        复制全部
+                        {t("info.copyAll")}
                       </Button>
                       <Button
                         variant="ghost"
@@ -472,7 +474,9 @@ export default function InfoGeneratePage() {
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-gray-900">
-                生成结果 {generatedData && generatedData.length > 0 && `(${generatedData.length}条)`}
+                {generatedData && generatedData.length > 0 
+                  ? t("info.resultsCount", { count: generatedData.length })
+                  : t("info.results")}
               </h2>
               {generatedData && generatedData.length > 0 && (
                 <Button
@@ -481,7 +485,7 @@ export default function InfoGeneratePage() {
                   className="flex items-center space-x-2 bg-white/80 backdrop-blur-sm hover:shadow-md transition-all duration-300"
                 >
                   <Download className="h-4 w-4" />
-                  <span>导出CSV</span>
+                  <span>{t("info.exportCSV")}</span>
                 </Button>
               )}
             </div>
@@ -494,8 +498,8 @@ export default function InfoGeneratePage() {
                     <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 shadow-inner">
                       <User className="h-8 w-8 text-gray-400" />
                     </div>
-                    <p className="text-gray-500 font-medium">暂无生成数据</p>
-                    <p className="text-sm text-gray-400 mt-1">输入卡号并点击生成按钮开始</p>
+                    <p className="text-gray-500 font-medium">{t("info.noData")}</p>
+                    <p className="text-sm text-gray-400 mt-1">{t("info.noDataHint")}</p>
                   </CardContent>
                 </Card>
               ) : (
@@ -545,7 +549,7 @@ export default function InfoGeneratePage() {
                             <div className="w-4 h-4 bg-gradient-to-br from-emerald-500 to-green-500 rounded-lg flex items-center justify-center shadow-sm">
                               <User className="h-2 w-2 text-white" />
                             </div>
-                            <span className="text-gray-600">姓名:</span>
+                            <span className="text-gray-600">{t("info.name")}:</span>
                             <span className="font-medium text-gray-900">{info.fullName}</span>
                           </div>
 
@@ -553,7 +557,7 @@ export default function InfoGeneratePage() {
                             <div className="w-4 h-4 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center shadow-sm">
                               <CreditCard className="h-2 w-2 text-white" />
                             </div>
-                            <span className="text-gray-600">有效期:</span>
+                            <span className="text-gray-600">{t("info.expiry")}:</span>
                             <span className="font-medium text-gray-900">{info.month}/{info.year}</span>
                           </div>
 
@@ -561,7 +565,7 @@ export default function InfoGeneratePage() {
                             <div className="w-4 h-4 bg-gradient-to-br from-purple-500 to-violet-500 rounded-lg flex items-center justify-center shadow-sm">
                               <Phone className="h-2 w-2 text-white" />
                             </div>
-                            <span className="text-gray-600">电话:</span>
+                            <span className="text-gray-600">{t("info.phone")}:</span>
                             <span className="font-medium font-mono text-gray-900">{info.phone}</span>
                           </div>
 
@@ -569,7 +573,7 @@ export default function InfoGeneratePage() {
                             <div className="w-4 h-4 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-lg flex items-center justify-center shadow-sm">
                               <Mail className="h-2 w-2 text-white" />
                             </div>
-                            <span className="text-gray-600">邮箱:</span>
+                            <span className="text-gray-600">{t("info.email")}:</span>
                             <span className="font-medium font-mono text-gray-900 text-xs">{info.email}</span>
                           </div>
 
@@ -577,7 +581,7 @@ export default function InfoGeneratePage() {
                             <div className="w-4 h-4 bg-gradient-to-br from-pink-500 to-rose-500 rounded-lg flex items-center justify-center shadow-sm">
                               <MapPin className="h-2 w-2 text-white" />
                             </div>
-                            <span className="text-gray-600">国家:</span>
+                            <span className="text-gray-600">{t("info.country")}:</span>
                             <span className="font-medium text-gray-900">{info.country}</span>
                           </div>
 
@@ -587,7 +591,7 @@ export default function InfoGeneratePage() {
                                 <MapPin className="h-2 w-2 text-white" />
                               </div>
                               <div className="flex-1">
-                                <div className="text-gray-600 text-xs">地址:</div>
+                                <div className="text-gray-600 text-xs">{t("info.address")}:</div>
                                 <div className="font-medium text-gray-900">
                                   {info.address}<br />
                                   {info.city}, {info.state} {info.zipCode}
@@ -617,9 +621,9 @@ export default function InfoGeneratePage() {
               <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-blue-500 rounded-lg flex items-center justify-center shadow-lg">
                 <CheckCircle className="h-5 w-5 text-white" />
               </div>
-              生成完成
+              {t("info.generateComplete")}
             </DialogTitle>
-            <DialogDescription className="text-gray-600">信息生成结果统计</DialogDescription>
+            <DialogDescription className="text-gray-600">{t("info.resultStats")}</DialogDescription>
           </DialogHeader>
 
           {generateResult && (
@@ -630,7 +634,7 @@ export default function InfoGeneratePage() {
                   <div className="flex items-center gap-2">
                     <CheckCircle className="w-5 h-5 text-green-600" />
                     <div>
-                      <div className="text-sm font-medium text-green-900">成功生成</div>
+                      <div className="text-sm font-medium text-green-900">{t("info.successCount")}</div>
                       <div className="text-2xl font-bold text-green-600">{generateResult.successCount}</div>
                     </div>
                   </div>
@@ -639,7 +643,7 @@ export default function InfoGeneratePage() {
                   <div className="flex items-center gap-2">
                     <XCircle className="w-5 h-5 text-red-600" />
                     <div>
-                      <div className="text-sm font-medium text-red-900">生成失败</div>
+                      <div className="text-sm font-medium text-red-900">{t("info.failedCount")}</div>
                       <div className="text-2xl font-bold text-red-600">{generateResult.failedCount}</div>
                     </div>
                   </div>
@@ -653,8 +657,8 @@ export default function InfoGeneratePage() {
                     <span className="text-white text-xs font-bold">M</span>
                   </div>
                   <div>
-                    <div className="text-sm font-medium text-blue-900">实际消耗</div>
-                    <div className="text-lg font-bold text-blue-600">{generateResult.totalCost} M币</div>
+                    <div className="text-sm font-medium text-blue-900">{t("info.actualCost")}</div>
+                    <div className="text-lg font-bold text-blue-600">{generateResult.totalCost} {t("recharge.coins")}</div>
                   </div>
                 </div>
               </div>
@@ -664,7 +668,7 @@ export default function InfoGeneratePage() {
                 <div className="bg-red-50 rounded-lg p-4 border border-red-200">
                   <div className="flex items-center gap-2 mb-3">
                     <XCircle className="w-5 h-5 text-red-600" />
-                    <div className="text-sm font-medium text-red-900">生成失败的卡号</div>
+                    <div className="text-sm font-medium text-red-900">{t("info.failedCards")}</div>
                   </div>
                   <div className="space-y-2 max-h-32 overflow-y-auto">
                     {generateResult.failedCardNumbers.map((cardNumber, index) => (
@@ -682,13 +686,13 @@ export default function InfoGeneratePage() {
                   className="flex-1 bg-transparent"
                   onClick={() => setShowResultDialog(false)}
                 >
-                  关闭
+                  {t("info.close")}
                 </Button>
                 <Button
                   className="flex-1 bg-gradient-to-r from-cyan-500 to-blue-500 text-white hover:from-cyan-600 hover:to-blue-600"
                   onClick={() => setShowResultDialog(false)}
                 >
-                  查看结果
+                  {t("info.viewResults")}
                 </Button>
               </div>
             </div>

@@ -125,7 +125,7 @@ export function GroupedResults({
                         {groupName}
                       </CardTitle>
                       <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 font-medium">
-                        {cards.length}张卡
+                        {cards.length} {t("bin.results.cards")}
                       </Badge>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -149,7 +149,7 @@ export function GroupedResults({
 
                 <CardContent className="relative pt-0 p-6">
                   <div className="text-sm text-gray-600">
-                    点击查看 {cards.length} 张卡片的详细信息
+                    {t("bin.results.clickToView").replace("{count}", cards.length.toString())}
                   </div>
                   
                   {/* 显示前几张卡片的预览 */}
@@ -161,7 +161,7 @@ export function GroupedResults({
                     ))}
                     {cards.length > 3 && (
                       <div className="text-xs text-gray-400">
-                        还有 {cards.length - 3} 张卡片...
+                        {t("bin.results.moreCards").replace("{count}", (cards.length - 3).toString())}
                       </div>
                     )}
                   </div>
@@ -202,7 +202,7 @@ export function GroupedResults({
                       {selectedGroup.name}
                     </div>
                     <div className="text-sm text-purple-700 mb-3">
-                      包含 {selectedGroup.cards.length} 张卡片
+                      {t("bin.results.contains").replace("{count}", selectedGroup.cards.length.toString())}
                     </div>
                     <Button
                       variant="outline"
@@ -211,12 +211,12 @@ export function GroupedResults({
                       className="h-8 text-xs bg-white/80 hover:bg-white hover:scale-105 transition-all duration-300"
                     >
                       <Copy className="w-3 h-3 mr-1" />
-                      复制所有卡号
+                      {t("bin.results.copyAllCards")}
                     </Button>
                   </div>
 
                   {/* 卡片列表标题 - 固定 */}
-                  <div className="text-sm font-medium text-gray-700 mb-3 flex-shrink-0">卡片列表</div>
+                  <div className="text-sm font-medium text-gray-700 mb-3 flex-shrink-0">{t("bin.results.cardList")}</div>
                   
                   {/* 卡片列表 - 使用虚拟化列表优化大数据渲染 */}
                   <div className="flex-1 min-h-0">
@@ -275,7 +275,7 @@ export function GroupedResults({
                              (!card.bankName || card.bankName === '未知') && 
                              (!card.countryName || card.countryName === '未知') && (
                               <div className="text-xs text-gray-400 italic">
-                                暂无详细信息
+                                {t("bin.results.noDetails")}
                               </div>
                             )}
                           </div>

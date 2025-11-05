@@ -4,7 +4,7 @@
  */
 
 import { loadConfig } from './loader'
-import type { AppConfigData, ApiConfig, AppConfig, FeaturesConfig, AuthConfig, PaginationConfig, CVVCheckConfig, LanguageConfig, BrandingConfig } from './types'
+import type { AppConfigData, ApiConfig, AppConfig, FeaturesConfig, AuthConfig, PaginationConfig, CVVCheckConfig, LanguageConfig, BrandingConfig, CustomerServiceConfig } from './types'
 
 // 全局配置实例
 let configInstance: AppConfigData | null = null
@@ -107,6 +107,13 @@ export function getLogoName(): string {
 }
 
 /**
+ * 获取客服配置
+ */
+export function getCustomerServiceConfig(): CustomerServiceConfig {
+  return getConfig().customerService
+}
+
+/**
  * 获取完整配置
  */
 export function getFullConfig(): AppConfigData {
@@ -117,5 +124,5 @@ export function getFullConfig(): AppConfigData {
 initConfig()
 
 // 导出类型
-export type { AppConfigData, ApiConfig, AppConfig, FeaturesConfig, AuthConfig, PaginationConfig, CVVCheckConfig, LanguageConfig, BrandingConfig }
+export type { AppConfigData, ApiConfig, AppConfig, FeaturesConfig, AuthConfig, PaginationConfig, CVVCheckConfig, LanguageConfig, BrandingConfig, CustomerServiceConfig }
 

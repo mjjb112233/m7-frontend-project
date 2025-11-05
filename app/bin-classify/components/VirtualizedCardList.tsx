@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Copy } from "lucide-react"
 import { CardInfo } from "../types"
+import { useLanguage } from "@/contexts/language-context"
 
 interface VirtualizedCardListProps {
   cards: CardInfo[]
@@ -192,7 +193,7 @@ const VirtualizedCardItem = React.memo(function VirtualizedCardItem({
        (!card.bankName || card.bankName === '未知') && 
        (!card.countryName || card.countryName === '未知') && (
         <div className="text-xs text-gray-400 italic">
-          暂无详细信息
+          {t("bin.results.noDetails")}
         </div>
       )}
     </div>

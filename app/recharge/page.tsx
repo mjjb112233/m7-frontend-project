@@ -30,15 +30,18 @@ import {
 import Header from "@/components/layout/header"
 import { RechargeFooter } from "@/components/layout/recharge-footer"
 import { generateQRCodeFromURL } from "@/lib/qr-code-utils"
+import { useLanguage } from "@/contexts/language-context"
 
 // 充值套餐接口（后端API返回的数据结构）
 interface RechargePackage {
   id: string
-  name: string
+  nameZh: string
+  nameEn: string
   m_coin_amount: number
   discount: number
   original_price: number
-  description?: string
+  descriptionZh?: string
+  descriptionEn?: string
   is_popular: boolean
 }
 
@@ -107,6 +110,7 @@ export default function RechargePage() {
 }
 
 function RechargeContent() {
+  const { t, language } = useLanguage()
   const authContext = useContext(AuthContext)
   const token = authContext?.token
   const updateMCoins = authContext?.updateMCoins
@@ -169,7 +173,7 @@ function RechargeContent() {
         setShowPaymentDialog(false)
         setPaymentStatus("failed")
         setResultType("failed")
-        setResultMessage("支付时间已过期，请重新选择套餐")
+        setResultMessage(t("recharge.paymentExpired"))
         setResultAmount(0)
         setShowResultDialog(true)
       }
@@ -212,6 +216,12 @@ function RechargeContent() {
           const discountedPrice = pkg.original_price * (1 - pkg.discount / 100)
           const savedAmount = pkg.original_price - discountedPrice
           
+          // 根据当前语言选择对应的名称和描述
+          const name = language === 'zh' ? pkg.nameZh : pkg.nameEn
+          const description = language === 'zh' 
+            ? (pkg.descriptionZh || '') 
+            : (pkg.descriptionEn || '')
+          
           return {
             id: pkg.id,
             mCoins: pkg.m_coin_amount,
@@ -221,8 +231,8 @@ function RechargeContent() {
             discountedPrice: discountedPrice, // 折扣后价格
             savedAmount: savedAmount, // 节省的价格
             popular: pkg.is_popular,
-            title: pkg.name,
-            description: pkg.description || "",
+            title: name,
+            description: description,
             features: generateFeatures(pkg.m_coin_amount),
             icon: getIconForPackage(index),
             theme: getThemeForPackage(index)
@@ -347,7 +357,7 @@ function RechargeContent() {
     if (token) {
       fetchRechargePackages()
     }
-  }, [token])
+  }, [token, language])
 
 
 
@@ -362,7 +372,7 @@ function RechargeContent() {
 
   const handlePackageSelect = async (pkg: DisplayPackage) => {
     if (!token) {
-      alert("请先登录")
+      alert(t("recharge.pleaseLogin"))
       return
     }
 
@@ -456,7 +466,7 @@ function RechargeContent() {
         if (statusData.paymentStatus === "success") {
           setPaymentStatus("success")
           setResultType("success")
-          setResultMessage("充值成功！M币已到账")
+          setResultMessage(t("recharge.successMessage"))
           setResultAmount(statusData.mCoinAmount || 0)
           setShowPaymentDialog(false)
           setShowResultDialog(true)
@@ -472,7 +482,7 @@ function RechargeContent() {
         } else if (statusData.paymentStatus === "failed") {
           setPaymentStatus("failed")
           setResultType("failed")
-          setResultMessage("充值失败，请检查支付信息或联系客服")
+          setResultMessage(t("recharge.failedMessage"))
           setResultAmount(0)
           setShowPaymentDialog(false)
           setShowResultDialog(true)
@@ -536,7 +546,7 @@ function RechargeContent() {
           // 支付成功
           setPaymentStatus("success")
           setResultType("success")
-          setResultMessage("充值成功！M币已到账")
+          setResultMessage(t("recharge.successMessage"))
           setResultAmount(resultData.mCoinAmount || 0)
           setShowPaymentDialog(false) // 关闭支付对话框
           setShowResultDialog(true)
@@ -557,7 +567,7 @@ function RechargeContent() {
           // 后端还在验证中，显示pending结果对话框
           setPaymentStatus("pending")
           setResultType("pending")
-          setResultMessage("支付还在处理中，请稍候...")
+          setResultMessage(t("recharge.paymentPending"))
           setResultAmount(0)
           setShowPaymentDialog(false) // 关闭支付对话框
           setShowResultDialog(true)
@@ -578,7 +588,7 @@ function RechargeContent() {
           // 支付失败
           setPaymentStatus("failed")
           setResultType("failed")
-          setResultMessage("支付验证失败。如果您已经支付，请联系客服处理，或者重新选择套餐进行支付。")
+          setResultMessage(t("recharge.paymentVerifyFailed"))
           setResultAmount(0)
           setShowPaymentDialog(false) // 关闭支付对话框
           setShowResultDialog(true)
@@ -596,14 +606,14 @@ function RechargeContent() {
       setResultType("failed")
       
       // 检查错误类型
-      let errorMessage = "充值失败，请稍后重试"
+      let errorMessage = t("recharge.retryMessage")
       if (error instanceof Error) {
         if (error.name === 'AbortError' || error.message.includes('aborted')) {
-          errorMessage = "请求超时，请点击重试继续检查支付结果"
-        } else if (error.message.includes('timeout') || error.message.includes('超时')) {
-          errorMessage = "支付结果检查超时，请点击重试"
-        } else if (error.message.includes('network') || error.message.includes('网络')) {
-          errorMessage = "网络错误，请检查网络连接后重试"
+          errorMessage = t("recharge.requestTimeout")
+        } else if (error.message.includes('timeout') || error.message.toLowerCase().includes('timeout')) {
+          errorMessage = t("recharge.checkTimeout")
+        } else if (error.message.includes('network') || error.message.toLowerCase().includes('network')) {
+          errorMessage = t("recharge.networkError")
         }
       }
       
@@ -701,7 +711,7 @@ function RechargeContent() {
       if (data.success && data.data) {
         const exchangeData = data.data as any
         setResultType("success")
-        setResultMessage(exchangeData.message || "兑换成功！M币已到账")
+        setResultMessage(exchangeData.message || t("recharge.exchangeSuccessMessage"))
         setResultAmount(exchangeData.mCoinsReward || 0)
         
         // 使用获取用户信息的方式更新余额
@@ -743,7 +753,7 @@ function RechargeContent() {
     } catch (error: any) {
       console.error('使用兑换码错误:', error)
       // 现在authenticatedRequest会正确抛出包含后端错误信息的异常
-      const errorMessage = error.message || "网络错误，请检查网络连接后重试"
+      const errorMessage = error.message || t("recharge.networkError")
       setExchangeError(errorMessage)
     } finally {
       setIsProcessingCode(false)
@@ -766,21 +776,21 @@ function RechargeContent() {
             <div className="w-8 h-8 bg-gradient-to-br from-orange-500 to-amber-500 rounded-lg flex items-center justify-center shadow-lg">
               <Coins className="h-4 w-4 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-gray-900">充值</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{t("recharge.pageTitle")}</h1>
           </div>
-          <p className="text-sm text-gray-600 max-w-xl mx-auto">使用USDT购买M币，享受更多功能和优惠折扣</p>
+          <p className="text-sm text-gray-600 max-w-xl mx-auto">{t("recharge.pageSubtitle")}</p>
         </div>
 
         <div className="space-y-6 mb-8">
           <Tabs defaultValue="packages" value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto mb-6">
+            <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto mb-10">
               <TabsTrigger value="packages" className="flex items-center gap-2">
                 <Coins className="w-4 h-4" />
-                套餐充值
+                {t("recharge.packagesTab")}
               </TabsTrigger>
               <TabsTrigger value="exchange" className="flex items-center gap-2">
                 <Gift className="w-4 h-4" />
-                兑换码
+                {t("recharge.exchangeCode")}
               </TabsTrigger>
             </TabsList>
 
@@ -789,7 +799,7 @@ function RechargeContent() {
                 <div className="flex items-center justify-center py-12">
                   <div className="text-center">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
-                    <p className="text-gray-600">正在加载充值套餐...</p>
+                    <p className="text-gray-600">{t("recharge.loadingPackages")}</p>
                   </div>
                 </div>
               ) : rechargePackages.length === 0 ? (
@@ -798,13 +808,13 @@ function RechargeContent() {
                     <div className="text-gray-400 mb-4">
                       <Coins className="h-16 w-16 mx-auto" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">暂无充值套餐</h3>
-                    <p className="text-gray-600">请联系客服或稍后重试</p>
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{t("recharge.noPackages")}</h3>
+                    <p className="text-gray-600">{t("recharge.contactSupport")}</p>
                   </div>
                 </div>
               ) : (
-                <div className="flex justify-center">
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-4 max-w-7xl">
+                <div className="flex justify-center w-full">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-5 2xl:grid-cols-5 gap-6 w-full max-w-[1400px] px-4">
                     {rechargePackages.map((pkg, index) => {
                       const IconComponent = pkg.icon
                       return (
@@ -823,7 +833,7 @@ function RechargeContent() {
                         {pkg.popular && (
                           <div className="absolute top-2 right-2 bg-gradient-to-r from-orange-600 to-amber-600 text-white px-2 py-1 rounded-lg text-xs font-bold shadow-lg z-20 flex items-center gap-1">
                             <Star className="w-3 h-3 fill-current" />
-                            <span>热门</span>
+                            <span>{t("recharge.popular")}</span>
                           </div>
                         )}
 
@@ -847,7 +857,7 @@ function RechargeContent() {
                           {/* Price */}
                           <div className="mb-4">
                             <div className="text-2xl font-bold text-gray-900 mb-1">{pkg.mCoins}</div>
-                            <div className="text-xs text-gray-500 mb-2">M币</div>
+                            <div className="text-xs text-gray-500 mb-2">{t("recharge.coins")}</div>
                             
                             {/* 显示折扣价格 */}
                             <div className="flex items-center justify-center gap-2 mb-1">
@@ -864,7 +874,7 @@ function RechargeContent() {
                             {pkg.discount > 0 && pkg.savedAmount && pkg.savedAmount > 0 && (
                               <div className="text-xs text-green-600 flex items-center justify-center gap-1">
                                 <Sparkles className="w-3 h-3" />
-                                节省 ${pkg.savedAmount.toFixed(1)}
+                                {t("recharge.saveAmount")} ${pkg.savedAmount.toFixed(1)}
                               </div>
                             )}
                           </div>
@@ -881,7 +891,7 @@ function RechargeContent() {
                                 : "bg-white text-gray-700 hover:bg-gray-50 border border-gray-200 hover:border-gray-300 shadow-sm"
                             }`}
                           >
-                            选择套餐
+                            {t("recharge.selectPackage")}
                           </button>
                         </CardContent>
                         
@@ -908,7 +918,7 @@ function RechargeContent() {
                       <div className="w-6 h-6 bg-gradient-to-br from-green-500 to-emerald-500 rounded-lg flex items-center justify-center shadow-lg">
                         <Gift className="h-4 w-4 text-white" />
                       </div>
-                      兑换码充值
+                      {t("recharge.exchangeCodeRecharge")}
                     </CardTitle>
                   </CardHeader>
 
@@ -916,11 +926,11 @@ function RechargeContent() {
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <Gift className="w-4 h-4 text-green-600" />
-                        <span className="text-sm font-medium text-green-700">兑换码</span>
+                        <span className="text-sm font-medium text-green-700">{t("recharge.exchangeCode")}</span>
                       </div>
                       <Input
                         id="exchange-code"
-                        placeholder="请输入您的兑换码"
+                        placeholder={t("recharge.exchangeCodePlaceholder")}
                         value={exchangeCode}
                         onChange={(e) => {
                           setExchangeCode(e.target.value)
@@ -951,20 +961,20 @@ function RechargeContent() {
                       {isProcessingCode ? (
                         <div className="flex items-center gap-2">
                           <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                          处理中...
+                          {t("recharge.processing")}
                         </div>
                       ) : (
-                        "使用兑换码"
+                        t("recharge.useExchangeCode")
                       )}
                     </Button>
 
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
                         <AlertCircle className="w-4 h-4 text-green-600" />
-                        <span className="text-sm font-medium text-green-700">使用说明</span>
+                        <span className="text-sm font-medium text-green-700">{t("recharge.instructions")}</span>
                       </div>
                       <p className="text-xs text-gray-600 leading-relaxed pl-6">
-                        兑换码通常由活动或推广获得，每个兑换码只能使用一次，兑换成功后M币将立即到账。
+                        {t("recharge.exchangeCodeDesc")}
                       </p>
                     </div>
 
@@ -981,36 +991,36 @@ function RechargeContent() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-lg font-bold text-gray-900">
                 <QrCode className="w-5 h-5 text-orange-600" />
-                USDT支付
+                {t("recharge.paymentDialogTitle")}
               </DialogTitle>
-              <DialogDescription className="text-gray-600">请使用USDT钱包扫描二维码或转账到指定地址</DialogDescription>
+              <DialogDescription className="text-gray-600">{t("recharge.paymentDialogDesc")}</DialogDescription>
             </DialogHeader>
 
             {paymentInfo && (
               <div className="space-y-6">
                 <div className="bg-gray-50 rounded-lg p-4 space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">购买数量:</span>
-                    <span className="text-sm font-medium text-gray-900">{paymentInfo.packageInfo?.mCoinAmount || 0} M币</span>
+                    <span className="text-sm text-gray-600">{t("recharge.purchaseAmount")}</span>
+                    <span className="text-sm font-medium text-gray-900">{paymentInfo.packageInfo?.mCoinAmount || 0} {t("recharge.coins")}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">支付金额:</span>
+                    <span className="text-sm text-gray-600">{t("recharge.paymentAmount")}</span>
                     <span className="text-sm font-bold text-gray-900">{paymentInfo.usdtAmount} USDT</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-600">剩余时间:</span>
+                    <span className="text-sm text-gray-600">{t("recharge.timeLeft")}</span>
                     <span className={`text-sm font-bold ${timeLeft <= 60 ? 'text-red-600' : 'text-orange-600'}`}>
                       {formatTime(timeLeft)}
                     </span>
                   </div>
                   {paymentInfo.packageInfo?.discount && paymentInfo.packageInfo.discount > 0 && (
                     <div className="flex justify-between text-green-600">
-                      <span className="text-sm">折扣:</span>
+                      <span className="text-sm">{t("recharge.discount")}</span>
                       <span className="text-sm">-{paymentInfo.packageInfo.discount}%</span>
                     </div>
                   )}
                   <div className="flex justify-between text-xs text-gray-500">
-                    <span>订单号:</span>
+                    <span>{t("recharge.orderNumber")}</span>
                     <span className="font-mono">{paymentInfo.paymentId}</span>
                   </div>
                 </div>
@@ -1026,16 +1036,16 @@ function RechargeContent() {
                     ) : (
                       <div className="w-40 h-40 flex flex-col items-center justify-center text-gray-500">
                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-400 mb-2"></div>
-                        <span className="text-sm">生成二维码中...</span>
+                        <span className="text-sm">{t("recharge.generatingQR")}</span>
                       </div>
                     )}
                   </div>
-                  <p className="text-sm text-gray-600 mt-2">使用USDT钱包扫描二维码支付</p>
+                  <p className="text-sm text-gray-600 mt-2">{t("recharge.scanQRCode")}</p>
                 </div>
 
                 {paymentInfo.walletAddress && (
                   <div>
-                    <Label className="text-sm font-medium text-gray-900">USDT钱包地址 (TRC20)</Label>
+                    <Label className="text-sm font-medium text-gray-900">{t("recharge.walletAddress")}</Label>
                     <div className="flex items-center gap-2 mt-2">
                       <Input value={paymentInfo.walletAddress} readOnly className="font-mono text-sm" tabIndex={-1} />
                       <Button
@@ -1047,12 +1057,12 @@ function RechargeContent() {
                         {copySuccess ? <CheckCircle className="w-4 h-4 text-green-500" /> : <Copy className="w-4 h-4" />}
                       </Button>
                     </div>
-                    {copySuccess && <p className="text-xs text-green-600 mt-1">地址已复制到剪贴板</p>}
+                    {copySuccess && <p className="text-xs text-green-600 mt-1">{t("recharge.addressCopied")}</p>}
                   </div>
                 )}
 
                 <div className="bg-orange-50 rounded-lg p-3 border border-orange-200">
-                  <h4 className="text-sm font-medium text-orange-900 mb-2">支付说明:</h4>
+                  <h4 className="text-sm font-medium text-orange-900 mb-2">{t("recharge.paymentInstructions")}</h4>
                   <ul className="text-xs text-orange-800 space-y-1">
                     {Array.isArray(paymentInfo.paymentInstructions) ? (
                       // 如果API返回的是数组格式
@@ -1079,13 +1089,13 @@ function RechargeContent() {
                       stopStatusCheck()
                     }}
                   >
-                    取消
+                    {t("recharge.cancel")}
                   </Button>
                   <Button 
                     className="flex-1 bg-gray-900 text-white hover:bg-gray-800" 
                     onClick={handlePaymentComplete}
                   >
-                    我已完成支付
+                    {t("recharge.paymentCompleted")}
                   </Button>
                 </div>
               </div>
@@ -1131,10 +1141,10 @@ function RechargeContent() {
                 </div>
               </div>
               <DialogTitle className="text-lg font-bold text-blue-600">
-                正在获取支付结果
+                {t("recharge.checkingPayment")}
               </DialogTitle>
               <DialogDescription className="text-sm mt-2 text-gray-600">
-                正在联系支付系统验证您的转账信息...
+                {t("recharge.checkingPaymentDesc")}
               </DialogDescription>
             </DialogHeader>
 
@@ -1146,13 +1156,13 @@ function RechargeContent() {
                   <div className="animate-pulse w-2 h-2 bg-blue-600 rounded-full" style={{animationDelay: '0.4s'}}></div>
                 </div>
                 <div className="text-sm text-blue-600 mt-2 font-medium">
-                  验证时间最多10分钟
+                  {t("recharge.verificationTime")}
                 </div>
               </div>
             </div>
 
             <div className="text-xs text-gray-500">
-              请不要关闭此窗口，系统正在处理您的支付信息
+              {t("recharge.doNotClose")}
             </div>
           </DialogContent>
         </Dialog>
@@ -1163,10 +1173,10 @@ function RechargeContent() {
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-lg font-bold text-orange-600">
                 <AlertCircle className="w-5 h-5" />
-                确认取消支付
+                {t("recharge.confirmCancel")}
               </DialogTitle>
               <DialogDescription className="text-gray-600">
-                您确定要取消当前的支付订单吗？
+                {t("recharge.confirmCancelDesc")}
               </DialogDescription>
             </DialogHeader>
 
@@ -1175,11 +1185,11 @@ function RechargeContent() {
                 <div className="flex items-start gap-3">
                   <AlertCircle className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
                   <div className="text-sm text-orange-800">
-                    <p className="font-medium mb-2">注意：</p>
+                    <p className="font-medium mb-2">{t("recharge.cancelNotice")}</p>
                     <ul className="space-y-1 text-xs">
-                      <li>• 取消后将无法继续使用当前的支付地址</li>
-                      <li>• 如果您已经转账，请不要取消</li>
-                      <li>• 取消后需要重新选择套餐进行支付</li>
+                      <li>• {t("recharge.cancelNotice1")}</li>
+                      <li>• {t("recharge.cancelNotice2")}</li>
+                      <li>• {t("recharge.cancelNotice3")}</li>
                     </ul>
                   </div>
                 </div>
@@ -1193,7 +1203,7 @@ function RechargeContent() {
                 onClick={() => setShowCancelConfirm(false)}
                 disabled={isCancellingPayment}
               >
-                继续支付
+                {t("recharge.continuePayment")}
               </Button>
               <Button
                 className="flex-1 bg-red-600 text-white hover:bg-red-700"
@@ -1203,10 +1213,10 @@ function RechargeContent() {
                 {isCancellingPayment ? (
                   <div className="flex items-center gap-2">
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    取消中...
+                    {t("recharge.cancelling")}
                   </div>
                 ) : (
-                  '确认取消'
+                  t("recharge.confirmCancelBtn")
                 )}
               </Button>
             </div>
@@ -1241,10 +1251,10 @@ function RechargeContent() {
                 }`}
               >
                 {resultType === "success" 
-                  ? "操作成功" 
+                  ? t("recharge.operationSuccess")
                   : resultType === "pending" 
-                    ? "支付处理中" 
-                    : "操作失败"
+                    ? t("recharge.paymentProcessing")
+                    : t("recharge.operationFailed")
                 }
               </DialogTitle>
               <DialogDescription className="text-sm mt-2 text-gray-600">{resultMessage}</DialogDescription>
@@ -1253,8 +1263,8 @@ function RechargeContent() {
             <div className="py-4">
               {resultType === "success" && resultAmount > 0 && (
                 <div className="bg-green-50 rounded-lg p-3 mb-4 border border-green-200">
-                  <div className="text-xl font-bold text-green-600">+{resultAmount} M币</div>
-                  <div className="text-xs text-green-600/80 mt-1">已添加到您的账户</div>
+                  <div className="text-xl font-bold text-green-600">+{resultAmount} {t("recharge.coins")}</div>
+                  <div className="text-xs text-green-600/80 mt-1">{t("recharge.addedToAccount")}</div>
                 </div>
               )}
 
@@ -1266,7 +1276,7 @@ function RechargeContent() {
                     <div className="animate-pulse w-2 h-2 bg-yellow-600 rounded-full" style={{animationDelay: '0.4s'}}></div>
                   </div>
                   <div className="text-sm text-yellow-800 mt-2 text-center font-medium">
-                    系统正在处理您的支付，请耐心等待
+                    {t("recharge.processingPayment")}
                   </div>
                 </div>
               )}
@@ -1275,7 +1285,7 @@ function RechargeContent() {
                 <div className="bg-red-50 rounded-lg p-3 mb-4 border border-red-200">
                   <div className="flex items-center justify-center gap-2 text-red-600">
                     <AlertCircle className="w-4 h-4" />
-                    <span className="text-sm font-medium">请重试或联系客服</span>
+                    <span className="text-sm font-medium">{t("recharge.retryOrContact")}</span>
                   </div>
                 </div>
               )}
@@ -1287,11 +1297,11 @@ function RechargeContent() {
                 className="flex-1" 
                 onClick={resultType === "pending" ? handleShowCancelConfirm : handleCloseResult}
               >
-                关闭
+                {t("recharge.close")}
               </Button>
               {resultType === "success" && (
                 <Button className="flex-1 bg-gray-900 text-white hover:bg-gray-800" onClick={handleCloseResult}>
-                  继续充值
+                  {t("recharge.continueRecharge")}
                 </Button>
               )}
               {resultType === "pending" && (
@@ -1299,7 +1309,7 @@ function RechargeContent() {
                   className="flex-1 bg-yellow-600 text-white hover:bg-yellow-700"
                   onClick={handleRetryPayment}
                 >
-                  点击重试，继续等待
+                  {t("recharge.retryWait")}
                 </Button>
               )}
               {resultType === "failed" && (
@@ -1307,7 +1317,7 @@ function RechargeContent() {
                   className="flex-1 bg-gray-900 text-white hover:bg-gray-800"
                   onClick={handleRetryPayment}
                 >
-                  重试
+                  {t("recharge.retry")}
                 </Button>
               )}
             </div>

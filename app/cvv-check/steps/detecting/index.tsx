@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge, type BadgeProps } from "@/components/ui/badge"
@@ -22,7 +22,35 @@ export function DetectingStep({
   autoStopCount,
   onDetectionComplete
 }: DetectingStepProps) {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
+  
+  // 根据语言获取本地化文本
+  const getLocalizedSpeed = (speedZh?: string, speedEn?: string): string => {
+    if (language === 'en') {
+      return speedEn || speedZh || '-'
+    } else {
+      return speedZh || speedEn || '-'
+    }
+  }
+  
+  const getLocalizedDescription = (descZh?: string, descEn?: string): string => {
+    if (language === 'en') {
+      return descEn || descZh || '-'
+    } else {
+      return descZh || descEn || '-'
+    }
+  }
+
+  // 获取服务状态的本地化显示
+  const getServiceStatusDisplay = (status: string | undefined): string => {
+    if (!status) return t("cvv.statusOffline")
+    if (status === "在线") {
+      return t("cvv.statusOnline")
+    }
+    // 如果后端返回的是英文，直接返回
+    return status
+  }
+
   const api = useCVVCheckAPI()
 
   // 获取配置
@@ -57,6 +85,9 @@ export function DetectingStep({
   
   // 控制定时器的状态 - 只有在这个页面时才轮询
   const [shouldPoll, setShouldPoll] = useState(true)
+  
+  // 保存 cancel-status 轮询的定时器 ID
+  const cancelStatusTimerRef = useRef<NodeJS.Timeout | null>(null)
 
   // 停止检测逻辑
   const handleStopDetection = async () => {
@@ -89,6 +120,11 @@ export function DetectingStep({
               
               if (cancelStatus.status === 'completed') {
                 console.log("[DetectingStep] 停止完成，跳转到结果页面")
+                // 清除定时器
+                if (cancelStatusTimerRef.current) {
+                  clearTimeout(cancelStatusTimerRef.current)
+                  cancelStatusTimerRef.current = null
+                }
                 setIsWaitingForCancel(false)
                 onDetectionComplete() // 通知父组件跳转到结果页面
                 return
@@ -99,25 +135,48 @@ export function DetectingStep({
             pollAttempts++
             if (pollAttempts >= maxPollAttempts) {
               console.log("[DetectingStep] 轮询超时，直接跳转到结果页面")
+              // 清除定时器
+              if (cancelStatusTimerRef.current) {
+                clearTimeout(cancelStatusTimerRef.current)
+                cancelStatusTimerRef.current = null
+              }
               setIsWaitingForCancel(false)
               onDetectionComplete() // 超时后也跳转到结果页面
               return
             }
             
-            // 继续下一次轮询
-            setTimeout(pollCancelStatus, cancelStatusPollInterval)
+            // 清除旧的定时器
+            if (cancelStatusTimerRef.current) {
+              clearTimeout(cancelStatusTimerRef.current)
+            }
+            // 继续下一次轮询，并保存定时器 ID
+            cancelStatusTimerRef.current = setTimeout(pollCancelStatus, cancelStatusPollInterval)
           } catch (error) {
             console.error("[DetectingStep] 轮询 cancel-status 失败:", error)
+            // 清除定时器
+            if (cancelStatusTimerRef.current) {
+              clearTimeout(cancelStatusTimerRef.current)
+              cancelStatusTimerRef.current = null
+            }
             // 轮询出错时，也跳转到结果页面
             setIsWaitingForCancel(false)
             onDetectionComplete()
           }
         }
         
-        // 开始第一次轮询（延迟一点，给后端处理时间）
-        setTimeout(pollCancelStatus, cancelStatusPollInterval)
+        // 清除旧的定时器（如果有）
+        if (cancelStatusTimerRef.current) {
+          clearTimeout(cancelStatusTimerRef.current)
+        }
+        // 开始第一次轮询（延迟一点，给后端处理时间），并保存定时器 ID
+        cancelStatusTimerRef.current = setTimeout(pollCancelStatus, cancelStatusPollInterval)
       } else {
         console.log("[DetectingStep] Stop detection failed, response:", result)
+        // 清除定时器
+        if (cancelStatusTimerRef.current) {
+          clearTimeout(cancelStatusTimerRef.current)
+          cancelStatusTimerRef.current = null
+        }
         setStopAlertData({ message: t("cvv.stopRequestFailed") })
         setShowStopErrorAlert(true)
         startStopButtonCountdown()
@@ -125,6 +184,11 @@ export function DetectingStep({
       }
     } catch (error) {
       console.error("[DetectingStep] 停止检测错误:", error)
+      // 清除定时器
+      if (cancelStatusTimerRef.current) {
+        clearTimeout(cancelStatusTimerRef.current)
+        cancelStatusTimerRef.current = null
+      }
       setStopAlertData({ message: t("cvv.networkError") })
       setShowStopErrorAlert(true)
       startStopButtonCountdown()
@@ -236,6 +300,11 @@ export function DetectingStep({
     return () => {
       console.log("[DetectingStep] 组件卸载，停止轮询并清理所有资源")
       setShouldPoll(false) // 停止轮询
+      // 清除 cancel-status 轮询定时器
+      if (cancelStatusTimerRef.current) {
+        clearTimeout(cancelStatusTimerRef.current)
+        cancelStatusTimerRef.current = null
+      }
       // 这里可以添加其他清理逻辑，比如取消正在进行的请求
     }
   }, [])
@@ -306,8 +375,15 @@ export function DetectingStep({
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
                 <span className="text-sm font-medium">{t("cvv.detectionService")}</span>
-                <Badge {...({ variant: detectionProgress?.serviceStatus === "在线" ? "default" : "destructive" } as any)}>
-                  {detectionProgress?.serviceStatus || t("cvv.statusOffline")}
+                <Badge {...(() => {
+                  const serviceStatus = detectionProgress?.serviceStatus || ""
+                  if (serviceStatus === "在线") {
+                    return { variant: "default", className: "border-transparent bg-green-500 text-white hover:bg-green-600" } as any
+                  } else {
+                    return { variant: "destructive", className: "border-transparent bg-red-500 text-white hover:bg-red-600" } as any
+                  }
+                })()}>
+                  {getServiceStatusDisplay(detectionProgress?.serviceStatus)}
                 </Badge>
               </div>
               <div className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden">
@@ -315,13 +391,13 @@ export function DetectingStep({
                 <Badge {...(() => {
                   const channelStatus = detectionProgress?.channelStatus || ""
                   if (channelStatus === "在线") {
-                    return { variant: "default" } as any
+                    return { variant: "default", className: "border-transparent bg-green-500 text-white hover:bg-green-600" } as any
                   } else if (channelStatus === "拥挤") {
-                    return { variant: "secondary" } as any
+                    return { variant: "secondary", className: "border-transparent bg-yellow-500 text-white hover:bg-yellow-600" } as any
                   } else if (channelStatus === "繁忙") {
-                    return { variant: "destructive" } as any
+                    return { variant: "destructive", className: "border-transparent bg-orange-500 text-white hover:bg-orange-600" } as any
                   } else {
-                    return { variant: "destructive" } as any
+                    return { variant: "destructive", className: "border-transparent bg-red-500 text-white hover:bg-red-600" } as any
                   }
                 })()}>
                   {detectionProgress?.channelStatus === "在线" ? t("cvv.statusOnline") :
@@ -360,11 +436,11 @@ export function DetectingStep({
                   </div>
                   <div className="space-y-1">
                     <div className="text-xs text-gray-500">{t("cvv.speedLabel")}</div>
-                    <div className="text-sm font-medium text-gray-900">{detectionProgress.channelSpeed || "-"}</div>
+                    <div className="text-sm font-medium text-gray-900">{getLocalizedSpeed(detectionProgress.channelSpeedZh, detectionProgress.channelSpeedEn)}</div>
                   </div>
                   <div className="space-y-1 md:col-span-2 md:col-start-1">
                     <div className="text-xs text-gray-500">{t("cvv.description")}</div>
-                    <div className="text-sm text-gray-700">{detectionProgress.channelDescription || "-"}</div>
+                    <div className="text-sm text-gray-700">{getLocalizedDescription(detectionProgress.channelDescriptionZh, detectionProgress.channelDescriptionEn)}</div>
                   </div>
                 </div>
               </div>

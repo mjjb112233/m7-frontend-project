@@ -85,6 +85,10 @@ function getDefaultConfig(): AppConfigData {
     branding: {
       copyWebsiteName: "cc-m7.com",
       logoName: "cc-m7",
+      tabTitle: "cc-m7",
+    },
+    customerService: {
+      contactUrl: "https://t.me/your_customer_service_bot",
     },
   }
 }

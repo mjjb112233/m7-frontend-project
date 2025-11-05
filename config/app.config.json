@@ -32,7 +32,11 @@
   },
   "branding": {
     "copyWebsiteName": "cc-m7.com",
-    "logoName": "cc-m7"
+    "logoName": "cc-m7",
+    "tabTitle": "m7-BankCardVerification"
+  },
+  "customerService": {
+    "contactUrl": "https://t.me/your_customer_service_bot"
   }
 }
 

@@ -51,6 +51,12 @@ export interface LanguageConfig {
 export interface BrandingConfig {
   copyWebsiteName: string  // 复制时携带的网站名字
   logoName: string  // Logo显示的名字
+  tabTitle: string  // 浏览器标签页显示的标题
+}
+
+// 客服配置接口
+export interface CustomerServiceConfig {
+  contactUrl: string  // 客服联系链接（如Telegram链接）
 }
 
 // 完整配置接口
@@ -63,5 +69,6 @@ export interface AppConfigData {
   cvvCheck: CVVCheckConfig
   language: LanguageConfig
   branding: BrandingConfig
+  customerService: CustomerServiceConfig
 }
 

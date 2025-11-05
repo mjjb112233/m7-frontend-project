@@ -4,11 +4,13 @@ import { authenticatedRequest } from "@/lib/api"
 // 充值套餐接口
 export interface RechargePackage {
   id: string
-  name: string
+  nameZh: string
+  nameEn: string
   m_coin_amount: number
   discount: number
   original_price: number
-  description?: string
+  descriptionZh?: string
+  descriptionEn?: string
   is_popular: boolean
 }
 

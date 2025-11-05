@@ -18,19 +18,25 @@ export interface DetectionResult {
 
 export interface Channel {
   id: number
-  name: string
+  name_zh: string
+  name_en: string
   rate: string
-  speed: string
-  description: string
+  speed: string  // 检测速度枚举值（用于业务逻辑）
+  speed_zh: string  // 检测速度显示名称（中文）
+  speed_en: string  // 检测速度显示名称（英文）
+  description_zh: string
+  description_en: string
   status: "idle" | "offline" | "busy"
   consumption?: string
 }
 
 export interface DetectionMode {
   "mode-id": number
-  name: string
+  name_zh: string
+  name_en: string
   "channels-data": {
-    description: string
+    description_zh: string
+    description_en: string
     channels: Channel[]
   }
 }
@@ -65,8 +71,10 @@ export interface DetectionProgressResponse {
   channelUserCount: number // 通道用户人数（200-10000）
   channelRate: number // 通道单卡消耗（任务创建时的快照）
   channelId: number // 通道ID（任务创建时的快照）
-  channelSpeed: string // 通道检测速度（任务创建时的快照，如："快速"/"中等"/"慢速"）
-  channelDescription: string // 通道介绍/描述（任务创建时的快照）
+  channelSpeedZh?: string // 通道检测速度显示名称（中文，任务创建时的快照）
+  channelSpeedEn?: string // 通道检测速度显示名称（英文，任务创建时的快照）
+  channelDescriptionZh?: string // 通道介绍/描述（中文，任务创建时的快照）
+  channelDescriptionEn?: string // 通道介绍/描述（英文，任务创建时的快照）
 }
 
 // API响应：检测结果数据

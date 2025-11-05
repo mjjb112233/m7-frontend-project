@@ -1,8 +1,11 @@
 import React from "react"
 import { Badge } from "@/components/ui/badge"
 import { User, Sparkles, Globe, Shield } from "lucide-react"
+import { useLanguage } from "@/contexts/language-context"
 
 export function InfoGenerateFooter() {
+  const { t } = useLanguage()
+  
   return (
     <footer className="border-t border-cyan-200/50 mt-16">
       <div>
@@ -15,10 +18,10 @@ export function InfoGenerateFooter() {
                 <div className="w-6 h-6 bg-gradient-to-br from-cyan-500 to-blue-500 rounded-lg flex items-center justify-center shadow-lg">
                   <User className="h-3 w-3 text-white" />
                 </div>
-                <h3 className="font-bold text-gray-900">智能信息生成</h3>
+                <h3 className="font-bold text-gray-900">{t("info.footer.brandTitle")}</h3>
               </div>
               <p className="text-sm text-gray-600 leading-relaxed">
-                基于真实的个人信息和真实的地理位置数据的智能身份信息生成工具，为您提供完整、准确的个人信息数据。
+                {t("info.footer.brandDesc")}
               </p>
             </div>
 
@@ -26,28 +29,28 @@ export function InfoGenerateFooter() {
             <div className="space-y-3">
               <h4 className="font-semibold text-gray-900 flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-cyan-600" />
-                核心特性
+                {t("info.footer.coreFeatures")}
               </h4>
               <ul className="space-y-2 text-sm text-gray-600">
                 <li className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full"></div>
-                  真实的个人信息
+                  {t("info.footer.realPersonalInfo")}
                 </li>
                 <li className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full"></div>
-                  真实的地理位置
+                  {t("info.footer.realLocation")}
                 </li>
                 <li className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full"></div>
-                  完整身份信息生成
+                  {t("info.footer.completeIdentity")}
                 </li>
                 <li className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full"></div>
-                  批量数据处理
+                  {t("info.footer.batchProcessing")}
                 </li>
                 <li className="flex items-center gap-2">
                   <div className="w-1.5 h-1.5 bg-cyan-500 rounded-full"></div>
-                  CSV格式导出
+                  {t("info.footer.csvExport")}
                 </li>
               </ul>
             </div>
@@ -56,30 +59,30 @@ export function InfoGenerateFooter() {
             <div className="space-y-3">
               <h4 className="font-semibold text-gray-900 flex items-center gap-2">
                 <Globe className="h-4 w-4 text-cyan-600" />
-                支持地区
+                {t("info.footer.supportedRegions")}
               </h4>
               <div className="flex flex-wrap gap-2">
                 <Badge variant="outline" className="bg-cyan-50 text-cyan-700 border-cyan-200 text-xs">
-                  美国
+                  {t("info.footer.country.usa")}
                 </Badge>
                 <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
-                  英国
+                  {t("info.footer.country.uk")}
                 </Badge>
                 <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 text-xs">
-                  加拿大
+                  {t("info.footer.country.canada")}
                 </Badge>
                 <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 text-xs">
-                  澳洲
+                  {t("info.footer.country.australia")}
                 </Badge>
                 <Badge variant="outline" className="bg-orange-50 text-orange-700 border-orange-200 text-xs">
-                  德国
+                  {t("info.footer.country.germany")}
                 </Badge>
                 <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 text-xs">
-                  法国
+                  {t("info.footer.country.france")}
                 </Badge>
               </div>
               <p className="text-xs text-gray-500 mt-2">
-                支持200+国家和地区，提供真实的个人信息和地理位置数据
+                {t("info.footer.regionsDesc")}
               </p>
             </div>
           </div>
@@ -89,16 +92,16 @@ export function InfoGenerateFooter() {
           {/* 底部信息 */}
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="text-sm text-gray-500">
-              © 2025 智能信息生成系统. 保留所有权利.
+              {t("info.footer.copyright")}
             </div>
             <div className="flex items-center gap-4 text-xs text-gray-400">
-              <span>数据来源: 真实地理数据库</span>
+              <span>{t("info.footer.dataSource")}</span>
               <span>•</span>
-              <span>生成速度: 毫秒级响应</span>
+              <span>{t("info.footer.generationSpeed")}</span>
               <span>•</span>
               <Badge variant="outline" className="bg-green-50 text-green-600 border-green-200 text-xs flex items-center gap-1">
                 <Shield className="h-3 w-3" />
-                安全可靠
+                {t("info.footer.safeReliable")}
               </Badge>
             </div>
           </div>

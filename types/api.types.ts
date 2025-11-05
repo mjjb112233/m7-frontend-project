@@ -38,3 +38,14 @@ export interface PaginatedResponse<T> {
   message?: string
 }
 
+// 维护数据类型
+export interface MaintenanceData {
+  announcement?: string  // 维护公告
+  endTime?: number       // 维护结束时间（Unix时间戳，秒）
+}
+
+// 维护响应接口
+export interface MaintenanceResponse extends ApiResponse<MaintenanceData> {
+  data?: MaintenanceData
+}
+

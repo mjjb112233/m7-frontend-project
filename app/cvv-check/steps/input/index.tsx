@@ -4,13 +4,13 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { CreditCard } from "lucide-react"
 import { useLanguage } from "@/contexts/language-context"
-import { DetectionMode, Channel } from "../../types"
+import { DetectionModeType, Channel } from "../../types"
 import { useCardValidation } from "@/hooks/use-card-validation"
 
 interface InputStepProps {
   inputText: string
   setInputText: (text: string) => void
-  selectedMode: DetectionMode
+  selectedMode: DetectionModeType
   selectedChannel: Channel | null
   onPrevious: () => void
   onNext: (precheckResults: { valid: string[]; invalid: string[] }) => void
@@ -24,9 +24,29 @@ export function InputStep({
   onPrevious,
   onNext
 }: InputStepProps) {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const cardValidation = useCardValidation()
   const [isPrechecking, setIsPrechecking] = useState(false)
+
+  // 获取模式的本地化显示名称
+  const getModeDisplayName = (mode: DetectionModeType): string => {
+    switch (mode) {
+      case "charge_test":
+        return language === 'en' ? 'Charge Test' : '扣测'
+      case "no_cvv":
+        return language === 'en' ? 'No CVV' : '无cvv'
+      case "with_cvv":
+        return language === 'en' ? 'CVV' : 'cvv'
+      default:
+        return mode
+    }
+  }
+
+  // 获取通道的本地化显示名称
+  const getChannelDisplayName = (channel: Channel | null): string => {
+    if (!channel) return ''
+    return language === 'en' ? (channel.name_en || channel.name_zh || '') : (channel.name_zh || channel.name_en || '')
+  }
 
   // 预检测CVV函数
   const handlePrecheck = async () => {
@@ -125,7 +145,7 @@ export function InputStep({
           {t("cvv.inputTitle")}
         </CardTitle>
         <CardDescription className="text-xs text-gray-600">
-          {t("cvv.currentConfig")}: {selectedMode} {t("cvv.mode")} - {selectedChannel?.name}
+          {t("cvv.currentConfig")}: {getModeDisplayName(selectedMode)} {t("cvv.mode")} - {getChannelDisplayName(selectedChannel)}
         </CardDescription>
       </CardHeader>
       <CardContent className="relative space-y-4 p-6">

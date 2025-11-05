@@ -190,3 +190,48 @@ export function formatAddress(address: {
   
   return parts.join(' ')
 }
+
+// 格式化维护时间
+export function formatMaintenanceTime(timestamp: number, language: string = 'zh'): string {
+  try {
+    const date = new Date(timestamp * 1000) // 后端返回的是秒级时间戳
+    
+    // 验证日期是否有效
+    if (isNaN(date.getTime())) {
+      return language === 'zh' ? '无效时间' : 'Invalid time'
+    }
+    
+    const now = new Date()
+    const isExpired = date.getTime() < now.getTime()
+    
+    if (isExpired) {
+      return language === 'zh' ? '维护已结束' : 'Maintenance completed'
+    }
+    
+    if (language === 'zh') {
+      // 中文格式：YYYY年MM月DD日 HH:mm:ss
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
+      const hours = String(date.getHours()).padStart(2, '0')
+      const minutes = String(date.getMinutes()).padStart(2, '0')
+      const seconds = String(date.getSeconds()).padStart(2, '0')
+      
+      return `${year}年${month}月${day}日 ${hours}:${minutes}:${seconds}`
+    } else {
+      // 英文格式：MM/DD/YYYY HH:mm AM/PM
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
+      const year = date.getFullYear()
+      const hours = date.getHours()
+      const minutes = String(date.getMinutes()).padStart(2, '0')
+      const ampm = hours >= 12 ? 'PM' : 'AM'
+      const displayHours = hours % 12 || 12
+      
+      return `${month}/${day}/${year} ${displayHours}:${minutes} ${ampm}`
+    }
+  } catch (error) {
+    console.error('维护时间格式化错误:', error)
+    return language === 'zh' ? '时间格式错误' : 'Time format error'
+  }
+}

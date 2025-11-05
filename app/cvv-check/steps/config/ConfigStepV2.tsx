@@ -26,7 +26,27 @@ export function ConfigStepV2({
   onNext,
   onConfigSelected
 }: ConfigStepV2Props) {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
+  
+  // 根据语言获取本地化文本
+  const getLocalizedText = (item: { name_zh?: string; name_en?: string; description_zh?: string; description_en?: string; speed_zh?: string; speed_en?: string }, field: 'name' | 'description' | 'speed'): string => {
+    if (field === 'name') {
+      return language === 'en' ? (item.name_en || item.name_zh || '') : (item.name_zh || item.name_en || '')
+    } else if (field === 'description') {
+      return language === 'en' ? (item.description_en || item.description_zh || '') : (item.description_zh || item.description_en || '')
+    } else if (field === 'speed') {
+      return language === 'en' ? (item.speed_en || item.speed_zh || '') : (item.speed_zh || item.speed_en || '')
+    }
+    return ''
+  }
+  
+  // 格式化消耗价格为两位小数
+  const formatRate = (rate: string | number | undefined): string => {
+    if (!rate && rate !== 0) return '0.00'
+    const num = typeof rate === 'string' ? parseFloat(rate) : rate
+    if (isNaN(num)) return '0.00'
+    return num.toFixed(2)
+  }
   
   // 组件内部状态管理
   const [detectionConfig, setDetectionConfig] = useState<DetectionConfig | null>(null)
@@ -50,6 +70,13 @@ export function ConfigStepV2({
         const result = await api.fetchDetectionConfig()
         if (result) {
           console.log("[ConfigStepV2] 配置获取成功:", result)
+          const firstChannel = result?.detectionModes?.[0]?.["channels-data"]?.channels?.[0]
+          console.log("[ConfigStepV2] 第一个通道数据:", firstChannel)
+          if (firstChannel) {
+            console.log("[ConfigStepV2] 通道字段检查 - description_zh:", firstChannel.description_zh)
+            console.log("[ConfigStepV2] 通道字段检查 - description_en:", firstChannel.description_en)
+            console.log("[ConfigStepV2] 通道所有字段:", Object.keys(firstChannel))
+          }
           setDetectionConfig(result as DetectionConfig)
         }
       } catch (error) {
@@ -91,6 +118,17 @@ export function ConfigStepV2({
   }
 
   const channels: Channel[] = selectedMode ? getChannelsForMode(selectedMode) : []
+  
+  // 调试：检查通道数据
+  useEffect(() => {
+    if (channels.length > 0) {
+      console.log("[ConfigStepV2] 第一个通道数据:", channels[0])
+      console.log("[ConfigStepV2] 当前语言:", language)
+      console.log("[ConfigStepV2] description_zh:", channels[0].description_zh)
+      console.log("[ConfigStepV2] description_en:", channels[0].description_en)
+      console.log("[ConfigStepV2] 本地化结果:", getLocalizedText(channels[0], 'description'))
+    }
+  }, [channels, language])
 
   // 将mode-id转换为DetectionModeType
   const getModeTypeFromId = (modeId: number): DetectionModeType => {
@@ -146,7 +184,7 @@ export function ConfigStepV2({
   // 错误处理
   if (configError) {
     return (
-      <Card className="max-w-4xl mx-auto">
+      <Card className="max-w-5xl mx-auto">
         <CardContent className="p-6 text-center">
           <div className="text-red-500 mb-4">{t("cvv.configLoadFailed")}: {configError}</div>
           <Button onClick={() => window.location.reload()}>{t("cvv.reload")}</Button>
@@ -156,7 +194,7 @@ export function ConfigStepV2({
   }
 
   return (
-    <Card className="relative overflow-hidden border-0 shadow-2xl max-w-4xl mx-auto">
+    <Card className="relative overflow-hidden border-0 shadow-2xl max-w-5xl mx-auto">
       <div className="absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 opacity-60"></div>
       <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-200/30 to-indigo-200/30 rounded-full -translate-y-16 translate-x-16"></div>
       <CardHeader className="relative text-left pb-4 bg-gradient-to-r from-blue-600/10 to-purple-600/10">
@@ -176,8 +214,8 @@ export function ConfigStepV2({
       </CardHeader>
       <CardContent className="relative space-y-6 p-6">
         {/* 检测模式和通道选择 - 左右布局 */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 relative">
-          {/* 左侧：检测模式选择 - 只占1列 */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 relative">
+          {/* 左侧：检测模式选择 - 占1列 */}
           <div className="lg:col-span-1 space-y-4">
             <label className="text-base font-semibold text-gray-900 flex items-center gap-2">
               <div className="w-5 h-5 bg-gradient-to-br from-purple-500 to-violet-500 rounded-lg flex items-center justify-center shadow-lg">
@@ -198,14 +236,14 @@ export function ConfigStepV2({
                     size="sm"
                     onClick={() => isEnabled && handleModeSelect(modeData)}
                     disabled={!isEnabled}
-                    className={`px-3 py-1.5 text-sm font-medium transition-all duration-200 hover:shadow-md rounded w-24 ${
+                    className={`px-4 py-1.5 text-sm font-medium transition-all duration-200 hover:shadow-md rounded min-w-[140px] max-w-[200px] whitespace-nowrap ${
                       selectedMode?.["mode-id"] === modeData["mode-id"]
                         ? "bg-gradient-to-r from-purple-500 to-violet-500 text-white shadow-md"
                         : "bg-white hover:bg-gray-50 border border-gray-200"
                     } ${!isEnabled ? "opacity-50" : ""}`}
-                    title={modeConfig?.description}
+                    title={modeConfig ? getLocalizedText({ description_zh: modeConfig.description_zh || '', description_en: modeConfig.description_en || '' }, 'description') : ''}
                   >
-                    {modeData.name}
+                    {getLocalizedText(modeData, 'name')}
                     {!isEnabled && <span className="ml-1 text-xs">({t("cvv.maintenance")})</span>}
                   </Button>
                 )
@@ -214,17 +252,17 @@ export function ConfigStepV2({
           </div>
 
           {/* 分割线 */}
-          <div className="hidden lg:block absolute left-1/4 top-4 bottom-4 w-px bg-gradient-to-b from-transparent via-blue-300 to-transparent shadow-sm"></div>
+          <div className="hidden lg:block absolute left-1/5 top-4 bottom-4 w-px bg-gradient-to-b from-transparent via-blue-300 to-transparent shadow-sm"></div>
 
-          {/* 右侧：通道选择 - 占2列 */}
-          <div className="lg:col-span-2 space-y-4">
+          {/* 右侧：通道选择 - 占4列 */}
+          <div className="lg:col-span-4 space-y-4">
             <label className="text-base font-semibold text-gray-900 flex items-center gap-2">
               <div className="w-5 h-5 bg-gradient-to-br from-emerald-500 to-green-500 rounded-lg flex items-center justify-center shadow-lg">
                 <TrendingUp className="h-3 w-3 text-white" />
               </div>
               {t("cvv.selectChannel")}
             </label>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
               {channels.map((channel, index) => {
                 const channelColors = [
                   { from: "blue-500", to: "cyan-500", bg: "blue-50", border: "blue-200" },
@@ -251,9 +289,9 @@ export function ConfigStepV2({
                     <div
                       className={`absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-${colorTheme.from}/20 to-${colorTheme.to}/20 rounded-full -translate-y-10 translate-x-10`}
                     ></div>
-                    <CardContent className="relative p-4">
+                    <CardContent className="relative p-4 pb-5">
                       <div className="flex items-center justify-between mb-3">
-                        <span className="font-semibold text-sm text-gray-900">{channel.name}</span>
+                        <span className="font-semibold text-sm text-gray-900">{getLocalizedText(channel, 'name')}</span>
                         <Badge
                           variant={
                             channel.status === "idle"
@@ -271,19 +309,19 @@ export function ConfigStepV2({
                         <div className="flex items-center justify-between">
                           <span>{t("cvv.consumptionLabel")}:</span>
                           <span className={`font-semibold text-${colorTheme.from.split("-")[0]}-600`}>
-                            {channel.consumption || channel.rate} {t("cvv.mCoins")}
+                            {formatRate(channel.consumption || channel.rate)} {t("cvv.mCoins")}
                           </span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span>{t("cvv.speedLabel")}:</span>
-                          <span className="font-semibold">{channel.speed}</span>
+                          <span className="font-semibold">{getLocalizedText(channel, 'speed')}</span>
                         </div>
-                        <div className="text-xs text-gray-500 mt-2">{channel.description}</div>
+                        <div className="text-xs text-gray-500 mt-2">{getLocalizedText(channel, 'description')}</div>
                       </div>
-                      <div
-                        className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-${colorTheme.from} to-${colorTheme.to}`}
-                      ></div>
                     </CardContent>
+                    <div
+                      className={`absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-${colorTheme.from} to-${colorTheme.to}`}
+                    ></div>
                   </Card>
                 )
               })}
@@ -300,21 +338,21 @@ export function ConfigStepV2({
                 <div className="w-4 h-4 bg-gradient-to-br from-blue-500 to-purple-500 rounded-lg flex items-center justify-center">
                   <CheckCircle className="h-3 w-3 text-white" />
                 </div>
-                {t("cvv.currentSelection")}: {selectedMode?.name} - {selectedChannel.name}
+                {t("cvv.currentSelection")}: {selectedMode ? getLocalizedText(selectedMode, 'name') : ''} - {selectedChannel ? getLocalizedText(selectedChannel, 'name') : ''}
               </h4>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs">
                 <div className="text-center p-2 bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow duration-200">
                   <div className="font-semibold text-blue-600 text-sm">
-                    {selectedChannel.consumption || selectedChannel.rate}
+                    {formatRate(selectedChannel.consumption || selectedChannel.rate)}
                   </div>
                   <div className="text-gray-600">{t("cvv.mCoins")}</div>
                 </div>
                 <div className="text-center p-2 bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow duration-200">
-                  <div className="font-semibold text-gray-900 text-sm">{selectedChannel.speed}</div>
+                  <div className="font-semibold text-gray-900 text-sm">{getLocalizedText(selectedChannel, 'speed')}</div>
                   <div className="text-gray-600">{t("cvv.speed")}</div>
                 </div>
                 <div className="col-span-2 p-2 bg-white rounded-lg border shadow-sm hover:shadow-md transition-shadow duration-200">
-                  <div className="text-gray-600 text-xs">{selectedChannel.description}</div>
+                  <div className="text-gray-600 text-xs">{getLocalizedText(selectedChannel, 'description')}</div>
                 </div>
               </div>
             </CardContent>

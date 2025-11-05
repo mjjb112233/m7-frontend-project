@@ -91,7 +91,7 @@ export function DiceBearAvatar({
       className={cn(
         "relative flex items-center justify-center rounded-full overflow-hidden transition-all duration-500",
         animated && "hover:scale-110 hover:rotate-2 transform-gpu",
-        showBorder && "ring-4 ring-white shadow-2xl",
+        showBorder && "ring-4 ring-white",
         className
       )}
       style={{ width: size, height: size }}
@@ -100,7 +100,7 @@ export function DiceBearAvatar({
       {/* 背景渐变 */}
       {showBorder && (
         <div className={cn(
-          "absolute -inset-2 rounded-full bg-gradient-to-br opacity-75 blur-sm",
+          "absolute -inset-2 rounded-full bg-gradient-to-br opacity-75",
           categoryInfo.color,
           animated && "animate-pulse"
         )} style={{animationDuration: '3s'}} />
@@ -141,7 +141,7 @@ export function DiceBearAvatar({
       {showBorder && (
         <>
           <div className="absolute inset-0 rounded-full bg-gradient-to-br from-white/20 to-transparent pointer-events-none z-20"></div>
-          <div className="absolute top-2 left-2 w-3 h-3 bg-white/40 rounded-full blur-sm pointer-events-none z-20"></div>
+          <div className="absolute top-2 left-2 w-3 h-3 bg-white/40 rounded-full pointer-events-none z-20"></div>
         </>
       )}
     </div>
@@ -274,7 +274,7 @@ export function DiceBearSelector({
               onClick={() => handleSeedSelect(seed)}
               className={cn(
                 "relative group transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded-full",
-                selectedSeed === seed && "ring-2 ring-blue-500 ring-offset-2 scale-110"
+                selectedSeed === seed && "ring-2 ring-blue-500 ring-offset-2"
               )}
               title={seed}
             >
@@ -284,7 +284,7 @@ export function DiceBearSelector({
                 size={60}
                 showBorder={true}
                 animated={true}
-                className="group-hover:shadow-xl"
+                className=""
               />
               {selectedSeed === seed && (
                 <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center shadow-lg animate-bounce">

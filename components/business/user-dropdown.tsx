@@ -48,7 +48,7 @@ export function UserDropdown() {
         <span className="text-sm font-semibold bg-gradient-to-r from-amber-600 to-yellow-600 bg-clip-text text-transparent">
           {user.mCoins.toLocaleString()}
         </span>
-        <span className="text-xs text-amber-600/80 font-medium">M币</span>
+        <span className="text-xs text-amber-600/80 font-medium">{t("recharge.coins")}</span>
       </div>
 
       <DropdownMenu>
@@ -97,13 +97,13 @@ export function UserDropdown() {
           <DropdownMenuSeparator className="bg-blue-200/30" />
           <DropdownMenuItem onClick={handleAccountInfo} className="hover:bg-blue-50 transition-colors duration-200">
             <User className="mr-3 h-4 w-4 text-blue-600" />
-            <span className="text-gray-700">{t("user.accountInfo") || "账户信息"}</span>
+            <span className="text-gray-700">{t("user.accountInfo")}</span>
           </DropdownMenuItem>
 
           <DropdownMenuSeparator className="bg-blue-200/30" />
           <DropdownMenuItem onClick={handleLogout} className="hover:bg-red-50 transition-colors duration-200">
             <LogOut className="mr-3 h-4 w-4 text-red-500" />
-            <span className="text-red-600">{t("user.logout") || "退出登录"}</span>
+            <span className="text-red-600">{t("user.logout")}</span>
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

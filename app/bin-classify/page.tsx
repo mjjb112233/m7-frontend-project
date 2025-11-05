@@ -20,7 +20,7 @@ export default function BinClassifyPage() {
 }
 
 function BinClassifyContent() {
-  const { t } = useLanguage()
+  const { t, language } = useLanguage()
   const [toastVisible, setToastVisible] = useState(false)
   const [toastMessage, setToastMessage] = useState('')
   const [toastType, setToastType] = useState<'success' | 'error'>('success')

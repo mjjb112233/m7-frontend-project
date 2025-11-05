@@ -1,8 +1,9 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { AnnouncementBanner } from "./announcement-banner"
 import { getAnnouncements, type Announcement } from "@/lib/api/announcements"
+import { useLanguage } from "@/contexts/language-context"
 
 // 简单的本地缓存和关闭功能
 function dismissAnnouncement(announcementId: string): void {
@@ -40,6 +41,7 @@ export function DynamicAnnouncement({
   position = "top",
   forceRefresh = false,
 }: DynamicAnnouncementProps) {
+  const { language } = useLanguage()
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [loading, setLoading] = useState(true)
   const [currentIndex, setCurrentIndex] = useState(0)
@@ -47,6 +49,59 @@ export function DynamicAnnouncement({
   const [isAnimating, setIsAnimating] = useState(false)
   const [intervalId, setIntervalId] = useState<NodeJS.Timeout | null>(null)
   const [hasLoaded, setHasLoaded] = useState(false)
+  // 使用 ref 保存所有原始公告（未过滤语言的）
+  const allAnnouncementsRef = useRef<Announcement[]>([])
+
+  // 根据语言过滤公告列表
+  const filterAnnouncementsByLanguage = useCallback((announcements: Announcement[], lang: "zh" | "en"): Announcement[] => {
+    if (lang === 'zh') {
+      // 中文模式：显示所有公告
+      return announcements
+    } else {
+      // 英文模式：只显示有完整英文内容的公告
+      return announcements.filter(announcement => {
+        const hasTitleEn = announcement.titleEn && announcement.titleEn.trim() !== ''
+        const hasMessageEn = announcement.messageEn && announcement.messageEn.trim() !== ''
+        return hasTitleEn && hasMessageEn
+      })
+    }
+  }, [])
+
+  // 根据当前语言获取公告的标题和消息
+  const getLocalizedContent = useCallback((announcement: Announcement) => {
+    // 优先使用双语字段（需要检查是否非空）
+    const hasFullBilingual = 
+      announcement.titleZh && announcement.titleZh.trim() !== '' &&
+      announcement.titleEn && announcement.titleEn.trim() !== '' &&
+      announcement.messageZh && announcement.messageZh.trim() !== '' &&
+      announcement.messageEn && announcement.messageEn.trim() !== ''
+    
+    if (hasFullBilingual) {
+      return {
+        title: language === 'zh' ? announcement.titleZh : announcement.titleEn,
+        message: language === 'zh' ? announcement.messageZh : announcement.messageEn,
+      }
+    }
+    
+    // 向后兼容：如果只有单语字段或双语字段不完整，使用可用字段
+    if (language === 'zh') {
+      // 中文模式：优先使用中文字段
+      return {
+        title: announcement.titleZh || announcement.title || '',
+        message: announcement.messageZh || announcement.message || '',
+      }
+    } else {
+      // 英文模式：只使用英文字段，不回退到中文（因为已经过滤过了）
+      return {
+        title: announcement.titleEn && announcement.titleEn.trim() !== '' 
+          ? announcement.titleEn 
+          : '',
+        message: announcement.messageEn && announcement.messageEn.trim() !== '' 
+          ? announcement.messageEn 
+          : '',
+      }
+    }
+  }, [language])
 
   const fetchAnnouncements = useCallback(async () => {
     // 如果已经加载过，不再重复请求
@@ -65,13 +120,19 @@ export function DynamicAnnouncement({
         // 获取已关闭的公告列表
         const dismissedAnnouncements = getDismissedAnnouncements()
         
-        // 过滤出已关闭的公告（位置固定为top，都可关闭，不限制数量）
-        const filteredAnnouncements = announcements
+        // 先过滤出已关闭的公告（位置固定为top，都可关闭，不限制数量）
+        const notDismissedAnnouncements = announcements
           .filter(announcement => 
             !dismissedAnnouncements.has(announcement.id)
           )
         
-        console.log("[v0] 获取到公告数量:", filteredAnnouncements.length)
+        // 保存所有未关闭的公告到 ref（用于语言切换时重新过滤）
+        allAnnouncementsRef.current = notDismissedAnnouncements
+        
+        // 根据当前语言过滤公告
+        const filteredAnnouncements = filterAnnouncementsByLanguage(notDismissedAnnouncements, language)
+        
+        console.log("[v0] 获取到公告数量:", filteredAnnouncements.length, "语言:", language)
         setAnnouncements(filteredAnnouncements)
         
         // 如果当前索引超出范围，重置为0
@@ -85,21 +146,50 @@ export function DynamicAnnouncement({
         // 请求成功但没有公告数据，不显示错误，直接设置为空数组
         console.log("[v0] 请求成功但没有公告数据")
         setAnnouncements([])
+        allAnnouncementsRef.current = []
         setHasLoaded(true)
       }
     } catch (error) {
       console.error("[v0] 获取公告异常:", error)
       setError("无法获取公告数据，请检查网络连接或稍后重试")
       setAnnouncements([])
+      allAnnouncementsRef.current = []
     } finally {
       setLoading(false)
     }
-  }, [hasLoaded, currentIndex])
+  }, [hasLoaded, currentIndex, language, filterAnnouncementsByLanguage])
 
   // 只在组件首次挂载时请求公告
   useEffect(() => {
     fetchAnnouncements()
   }, []) // 空依赖数组，只在组件挂载时执行一次
+
+  // 监听语言变化，重新过滤公告列表
+  useEffect(() => {
+    if (hasLoaded && allAnnouncementsRef.current.length > 0) {
+      console.log("[v0] 语言变化，重新过滤公告列表，语言:", language)
+      
+      // 获取已关闭的公告列表
+      const dismissedAnnouncements = getDismissedAnnouncements()
+      
+      // 先过滤出未关闭的公告
+      const notDismissedAnnouncements = allAnnouncementsRef.current
+        .filter(announcement => 
+          !dismissedAnnouncements.has(announcement.id)
+        )
+      
+      // 根据新语言过滤公告
+      const filteredAnnouncements = filterAnnouncementsByLanguage(notDismissedAnnouncements, language)
+      
+      console.log("[v0] 语言过滤后公告数量:", filteredAnnouncements.length)
+      setAnnouncements(filteredAnnouncements)
+      
+      // 重置索引
+      if (currentIndex >= filteredAnnouncements.length || filteredAnnouncements.length === 0) {
+        setCurrentIndex(0)
+      }
+    }
+  }, [language, hasLoaded, filterAnnouncementsByLanguage, currentIndex])
 
   useEffect(() => {
     // 清除之前的定时器
@@ -159,7 +249,7 @@ export function DynamicAnnouncement({
       }
 
       try {
-        const result = dismissAnnouncement(announcementId)
+        dismissAnnouncement(announcementId)
         // 公告关闭成功，从列表中移除
         setAnnouncements((prev) => {
           const newAnnouncements = prev.filter((ann) => ann.id !== announcementId)
@@ -172,6 +262,12 @@ export function DynamicAnnouncement({
           }
 
           console.log("[v0] 公告关闭后剩余数量:", newAnnouncements.length)
+          
+          // 更新所有公告的 ref（移除已关闭的）
+          allAnnouncementsRef.current = allAnnouncementsRef.current.filter(
+            ann => ann.id !== announcementId
+          )
+          
           return newAnnouncements
         })
       } catch (error) {
@@ -213,7 +309,10 @@ export function DynamicAnnouncement({
   }
 
   const currentAnnouncement = announcements[currentIndex]
-  console.log("[v0] 当前显示公告:", currentAnnouncement?.id, "索引:", currentIndex)
+  console.log("[v0] 当前显示公告:", currentAnnouncement?.id, "索引:", currentIndex, "语言:", language)
+
+  // 根据当前语言获取显示内容
+  const displayContent = getLocalizedContent(currentAnnouncement)
 
   return (
     <div className="relative overflow-hidden">
@@ -227,8 +326,8 @@ export function DynamicAnnouncement({
       >
         <AnnouncementBanner
           type={currentAnnouncement.uiType}
-          title={currentAnnouncement.title}
-          message={currentAnnouncement.message}
+          title={displayContent.title}
+          message={displayContent.message}
           dismissible={true}
           position="top"
           onDismiss={() => handleDismissAnnouncement(currentAnnouncement.id)}

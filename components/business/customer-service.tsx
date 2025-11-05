@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { MessageCircle, X, Send, Settings, Bell, BellOff, Bot, User } from "lucide-react"
 import { useLanguage } from "@/contexts/language-context"
+import { getCustomerServiceConfig } from "@/lib/config"
 
 
 
@@ -119,8 +120,8 @@ export function CustomerService({ onOpenChange }: CustomerServiceProps = {}) {
 
 
   const handleTelegramContact = () => {
-    // 这里可以替换为实际的Telegram客服链接
-    window.open("https://t.me/your_customer_service_bot", "_blank")
+    const customerServiceConfig = getCustomerServiceConfig()
+    window.open(customerServiceConfig.contactUrl, "_blank")
   }
 
   // 暴露打开客服的方法到全局
