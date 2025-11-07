@@ -33,8 +33,5 @@ export type SystemStatus = "normal" | "abnormal" | "maintenance"
 // 支付状态
 export type PaymentStatus = "pending" | "paid" | "expired" | "cancelled"
 
-// 提取码状态
-export type ExtractCodeStatus = "unused" | "used" | "expired"
-
 // 重新导出API类型（向后兼容）
 export type { ApiResponse, RequestConfig, PaginationParams, PaginatedResponse } from './api.types'

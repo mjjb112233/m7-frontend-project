@@ -26,7 +26,6 @@ export const USER_PERMISSIONS = {
     canAccessBinQuery: false,
     canAccessRecharge: false,
     canAccessInfoGenerate: false,
-    canAccessExtractCode: false,
   },
   [USER_LEVELS.LEVEL_1]: {
     canAccessCVVCheck: true,
@@ -34,7 +33,6 @@ export const USER_PERMISSIONS = {
     canAccessBinQuery: true,
     canAccessRecharge: true,
     canAccessInfoGenerate: false,
-    canAccessExtractCode: false,
   },
   [USER_LEVELS.LEVEL_2]: {
     canAccessCVVCheck: true,
@@ -42,7 +40,6 @@ export const USER_PERMISSIONS = {
     canAccessBinQuery: true,
     canAccessRecharge: true,
     canAccessInfoGenerate: true,
-    canAccessExtractCode: false,
   },
   [USER_LEVELS.LEVEL_3]: {
     canAccessCVVCheck: true,
@@ -50,7 +47,6 @@ export const USER_PERMISSIONS = {
     canAccessBinQuery: true,
     canAccessRecharge: true,
     canAccessInfoGenerate: true,
-    canAccessExtractCode: true,
   },
 } as const
 

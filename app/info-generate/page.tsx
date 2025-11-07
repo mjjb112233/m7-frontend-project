@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Copy, Download, MapPin, User, CreditCard, Phone, Mail, AlertCircle, Sparkles, CheckCircle, XCircle } from "lucide-react"
 import Header from "@/components/layout/header"
 import { InfoGenerateFooter } from "@/components/layout/info-generate-footer"
+import { AuthGuard } from "@/components/layout/auth-guard"
 import { AuthContext } from "@/contexts/auth-context"
 import { useLanguage } from "@/contexts/language-context"
 import { getBrandingConfig } from "@/lib/config"
@@ -51,6 +52,14 @@ interface GenerateInfoResponse {
 }
 
 export default function InfoGeneratePage() {
+  return (
+    <AuthGuard requiredLevel={2}>
+      <InfoGenerateContent />
+    </AuthGuard>
+  )
+}
+
+function InfoGenerateContent() {
   const { t } = useLanguage()
   const authContext = useContext(AuthContext)
   const token = authContext?.token
